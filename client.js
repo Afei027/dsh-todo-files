@@ -465,6 +465,35 @@ window.__ModuleLoader__.load({
           const ui = service('uiWorkspace')
           if (ui && typeof ui.openSession === 'function') ui.openSession(sessionId)
         },
+        /**
+         * Open the conversation a todo came from, archived or not.
+         *
+         * An archived Session is hidden from the sidebar, so it is restored first and opened right
+         * after — a link that only works while the conversation is unarchived is not a link. A live
+         * Session makes the restore call a no-op; a refusal still opens what can be opened.
+         * @param sessionId - the origin Session.
+         */
+        openLinked(sessionId) {
+          if (!sessionId) return
+          const ui = service('uiWorkspace')
+          const sessions = service('sessions')
+          const workspaces = service('workspaces')
+          const go = () => {
+            if (ui && typeof ui.openSession === 'function') ui.openSession(sessionId)
+          }
+          let live = false
+          try {
+            const snapshot = sessions && sessions.list ? sessions.list.getSnapshot() : null
+            live = !!(snapshot && Array.isArray(snapshot.ids) && snapshot.ids.includes(sessionId))
+          } catch {
+            live = false
+          }
+          if (live || !workspaces || typeof workspaces.unarchiveSession !== 'function') {
+            go()
+            return
+          }
+          Promise.resolve(workspaces.unarchiveSession(sessionId)).then(go, go)
+        },
         openChat() {
           const ui = service('uiWorkspace')
           if (!ui) return
@@ -860,7 +889,7 @@ window.__ModuleLoader__.load({
       const openConversationFor = (item) => {
         const sessionId = item && item.origin && item.origin.sessionId
         if (!sessionId || !bridge) return
-        bridge.open(sessionId)
+        bridge.openLinked(sessionId)
       }
 
       const sendMessage = async () => {

@@ -1,0 +1,6 @@
+# Installs the sidebar panel that holds the personal todo list.
+- insert:
+    - id: todo-files
+      name: 'dsh-todo-files'
+      config:
+        requireAuth: true

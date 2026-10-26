@@ -1,0 +1,6 @@
+{
+  "meta": {
+    "title": "Todo & Files",
+    "description": "A sidebar todo panel: each item can point at a file on this computer and opens it in the conversation's own preview; ask DSH to add items in plain language."
+  }
+}

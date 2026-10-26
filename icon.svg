@@ -1,0 +1,8 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="64" height="64" role="img" aria-label="Todo and files">
+  <rect x="4" y="4" width="56" height="56" rx="14" fill="#4D6BFE"/>
+  <rect x="14.5" y="14.5" width="35" height="35" rx="9" fill="none" stroke="#FFFFFF" stroke-opacity="0.55" stroke-width="2.2"/>
+  <path d="M20.5 25.2 23.4 28.1 28.6 22.9" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M20.5 38.4 23.4 41.3 28.6 36.1" fill="none" stroke="#FFFFFF" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M33 25.6h9.5" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+  <path d="M33 38.8h9.5" fill="none" stroke="#FFFFFF" stroke-width="2.6" stroke-linecap="round"/>
+</svg>

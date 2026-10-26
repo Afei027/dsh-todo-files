@@ -140,10 +140,7 @@ window.__ModuleLoader__.load({
   display: flex; align-items: flex-start; gap: 10px; padding: 11px 10px;
   border-radius: 10px; transition: background .12s ease;
 }
-.dsh-tf-row.is-work { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 5%, transparent); }
-.dsh-tf-row.is-life { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 6%, transparent); }
-.dsh-tf-row.is-work:hover { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 10%, transparent); }
-.dsh-tf-row.is-life:hover { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 11%, transparent); }
+.dsh-tf-row:hover { background: var(--dsw-alias-bg-layer-1); }
 .dsh-tf-index {
   flex: none; width: 22px; text-align: right;
   font-size: 13px; line-height: 24px; font-weight: 500; color: var(--dsw-alias-label-secondary);

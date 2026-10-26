@@ -325,19 +325,54 @@ export function apply(ctx, rawConfig) {
       const stat = await safeStat(target)
       if (!stat) throw fail('路径不存在', 404)
       const isDirectory = stat.isDirectory()
-      try {
-        if (process.platform === 'win32') {
-          spawn('explorer.exe', [isDirectory ? target : `/select,${target}`], { detached: true, stdio: 'ignore', windowsHide: true }).unref()
-        } else if (process.platform === 'darwin') {
-          spawn('open', [isDirectory ? target : path.dirname(target)], { detached: true, stdio: 'ignore' }).unref()
-        } else {
-          spawn('xdg-open', [isDirectory ? target : path.dirname(target)], { detached: true, stdio: 'ignore' }).unref()
-        }
-      } catch (error) {
-        throw fail(messageOf(error))
-      }
-      return { path: target, kind: isDirectory ? 'dir' : 'file' }
+      const outcome = await revealInFileManager(target, isDirectory)
+      return { path: target, kind: isDirectory ? 'dir' : 'file', via: outcome.via }
     },
+  }
+
+  /**
+   * Hand one path to the operating system's file manager.
+   *
+   * Inside the desktop app the Host belongs to an Electron process, whose own `shell` API is the
+   * reliable route: it resolves the Explorer quirks a bare spawn runs into. Plain Node — a `dsh web`
+   * profile — falls back to the platform launcher, and this time failure is reported instead of
+   * being swallowed by an unobserved child event.
+   * @param target - absolute path.
+   * @param isDirectory - whether the path is a folder.
+   * @returns which route performed the reveal.
+   */
+  async function revealInFileManager(target, isDirectory) {
+    try {
+      const electron = await import('electron').catch(() => null)
+      const shell = electron && (electron.shell || (electron.default && electron.default.shell))
+      if (shell && typeof shell.showItemInFolder === 'function') {
+        if (isDirectory && typeof shell.openPath === 'function') {
+          const failure = await shell.openPath(target)
+          if (!failure) return { via: 'electron.openPath' }
+          warn('electron openPath refused the folder', failure)
+        } else {
+          shell.showItemInFolder(target)
+          return { via: 'electron.showItemInFolder' }
+        }
+      }
+    } catch (error) {
+      warn('the electron shell was unavailable', error)
+    }
+    const command =
+      process.platform === 'win32'
+        ? { file: 'explorer.exe', args: [isDirectory ? target : `/select,${target}`] }
+        : process.platform === 'darwin'
+          ? { file: 'open', args: [isDirectory ? target : path.dirname(target)] }
+          : { file: 'xdg-open', args: [isDirectory ? target : path.dirname(target)] }
+    await new Promise((resolve, reject) => {
+      const child = spawn(command.file, command.args, { detached: true, stdio: 'ignore' })
+      child.once('error', reject)
+      child.once('spawn', () => {
+        child.unref()
+        resolve()
+      })
+    })
+    return { via: command.file }
   }
 
   /**
@@ -486,7 +521,8 @@ export function apply(ctx, rawConfig) {
       }
       const value = await run(payload)
       const count = value && Array.isArray(value.items) ? value.items.length : undefined
-      trace(`ok ${op}${count === undefined ? '' : ` items=${count}`}`)
+      const via = value && typeof value.via === 'string' ? ` via=${value.via}` : ''
+      trace(`ok ${op}${count === undefined ? '' : ` items=${count}`}${via}`)
       send(200, { ok: true, value })
     } catch (error) {
       trace(`error ${op} ${messageOf(error)}`)

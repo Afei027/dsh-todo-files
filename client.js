@@ -57,6 +57,8 @@ window.__ModuleLoader__.load({
       'say.empty': '先写点什么再发。',
       'common.retry': '重试',
       'common.refresh': '刷新',
+      'portal.preview': '已在右侧打开预览：{name}',
+      'portal.reveal': '已在资源管理器打开：{name}',
     }
 
     const EN = {
@@ -90,6 +92,8 @@ window.__ModuleLoader__.load({
       'say.empty': 'Write something first.',
       'common.retry': 'Retry',
       'common.refresh': 'Refresh',
+      'portal.preview': 'Opened the preview: {name}',
+      'portal.reveal': 'Opened in the file manager: {name}',
     }
 
     // ---------------------------------------------------------------- css
@@ -113,6 +117,11 @@ window.__ModuleLoader__.load({
   margin: 8px 0 4px; padding: 9px 12px; border-radius: 9px; font-size: 14px; line-height: 1.6;
   border: 1px solid var(--dsw-alias-state-error-primary); color: var(--dsw-alias-label-primary);
   display: flex; align-items: center; gap: 10px;
+}
+.dsh-tf-notice {
+  margin: 8px 0 4px; padding: 7px 12px; border-radius: 9px; font-size: 13px; line-height: 1.5;
+  background: var(--dsw-alias-bg-layer-1); color: var(--dsw-alias-label-secondary);
+  border: 1px solid var(--dsw-alias-border-l1);
 }
 .dsh-tf-list { display: flex; flex-direction: column; gap: 2px; margin-top: 4px; }
 .dsh-tf-filters { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; flex: none; }
@@ -496,43 +505,47 @@ window.__ModuleLoader__.load({
           if (typeof ui.startSession === 'function') ui.startSession()
         },
         /**
-         * Open one linked path directly — the "portal".
+         * Open one linked path — the "portal".
          *
-         * A folder, or a file with no recorded origin, is handed to the operating system. A file
-         * whose origin Session is known opens in that Session's own preview: the panel switches
-         * back to that conversation first, because the preview is authorized and hosted there.
+         * A file opens in DSH's own preview (the visible, in-app route) using the todo's origin
+         * Session, or the Conversation currently on screen when the todo has no origin. A folder has
+         * no in-app view, so it goes to the file manager; the caller reports which one happened,
+         * because an Explorer window can open behind the app and look like nothing at all.
          * @param target - absolute path of the linked file or folder.
          * @param kind - `'file'` opens the preview; anything else is revealed.
          * @param originSessionId - Session the todo came from, when known.
+         * @returns whether an in-app preview was requested.
          */
         async openPath(target, kind, originSessionId) {
           const path = String(target || '')
-          if (!path) return
-          if (kind !== 'file' || !originSessionId) {
-            await call('fs.reveal', { path })
-            return
-          }
-          const ui = service('uiWorkspace')
-          const column = service('sidebarRight')
-          if (ui && typeof ui.openSession === 'function') ui.openSession(originSessionId)
-          else {
-            const layout = service('layout')
-            if (layout && typeof layout.selectPanel === 'function') layout.selectPanel('conversation')
-          }
-          // The preview lives in the right column of the Session we just selected; that column mints
-          // its store on the frame after the switch, so give the navigation one beat before opening.
-          window.setTimeout(() => {
-            let opened = false
-            try {
-              if (column && typeof column.openResource === 'function') {
-                column.openResource(fileAddress(originSessionId, path))
-                opened = true
-              }
-            } catch (error) {
-              if (typeof console !== 'undefined' && console.error) console.error('[todo-files] openResource failed', error)
+          if (!path) return { preview: false }
+          const sessionId = originSessionId || lastSessionId
+          if (kind === 'file' && sessionId) {
+            const ui = service('uiWorkspace')
+            const column = service('sidebarRight')
+            if (ui && typeof ui.openSession === 'function') ui.openSession(sessionId)
+            else {
+              const layout = service('layout')
+              if (layout && typeof layout.selectPanel === 'function') layout.selectPanel('conversation')
             }
-            if (!opened) call('fs.reveal', { path }).catch(() => {})
-          }, 150)
+            // The preview lives in the right column of the Session we just selected; that column
+            // mints its store on the frame after the switch, so give the navigation one beat.
+            window.setTimeout(() => {
+              let opened = false
+              try {
+                if (column && typeof column.openResource === 'function') {
+                  column.openResource(fileAddress(sessionId, path))
+                  opened = true
+                }
+              } catch (error) {
+                if (typeof console !== 'undefined' && console.error) console.error('[todo-files] openResource failed', error)
+              }
+              if (!opened) call('fs.reveal', { path }).catch(() => {})
+            }, 150)
+            return { preview: true }
+          }
+          await call('fs.reveal', { path })
+          return { preview: false }
         },
       }
     }
@@ -719,6 +732,7 @@ window.__ModuleLoader__.load({
       const [items, setItems] = useState([])
       const [busy, setBusy] = useState(true)
       const [error, setError] = useState('')
+      const [notice, setNotice] = useState('')
       const [say, setSay] = useState('')
       const [sendState, setSendState] = useState(null)
       const [scope, setScope] = useState('all')
@@ -815,12 +829,20 @@ window.__ModuleLoader__.load({
       }
 
       /** The portal: open the linked file or folder itself. */
-      const openPortalFor = (item) => {
+      const openPortalFor = async (item) => {
         if (!item || !item.link || !bridge) return
         const origin = item.origin && item.origin.sessionId ? item.origin.sessionId : ''
-        bridge
-          .openPath(item.link.path, item.link.kind, origin)
-          .catch((failure) => setError(messageOf(failure)))
+        try {
+          const outcome = await bridge.openPath(item.link.path, item.link.kind, origin)
+          setNotice(
+            outcome && outcome.preview
+              ? t('portal.preview', { name: item.link.name })
+              : t('portal.reveal', { name: item.link.path }),
+          )
+          window.setTimeout(() => setNotice(''), 6000)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
       }
 
       /** The link: return to the conversation this todo was created from. */
@@ -1003,7 +1025,9 @@ window.__ModuleLoader__.load({
                     h('span', { style: { flex: 1 } }, error),
                     h('button', { type: 'button', className: 'dsh-tf-btn', onClick: () => loadTodos() }, t('common.retry')),
                   )
-                : null,
+                : notice
+                  ? h('div', { className: 'dsh-tf-notice' }, notice)
+                  : null,
               h(
                 'div',
                 { className: 'dsh-tf-list', onClick: refreshAfterClick },

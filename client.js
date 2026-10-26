@@ -97,6 +97,7 @@ window.__ModuleLoader__.load({
     const CSS = `
 .dsh-tf-root, .dsh-tf-root * { box-sizing: border-box; }
 .dsh-tf-root {
+  --dsh-tf-work: #2f6bff;
   display: flex; flex-direction: column; height: 100%; min-height: 0;
   background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary);
   font-family: inherit; font-size: 15px; line-height: 1.6;
@@ -122,11 +123,11 @@ window.__ModuleLoader__.load({
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .dsh-tf-filter:hover { background: var(--dsw-alias-bg-layer-1); }
-.dsh-tf-filter[data-scope="work"] { color: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); }
+.dsh-tf-filter[data-scope="work"] { color: var(--dsh-tf-work); border-color: var(--dsh-tf-work); }
 .dsh-tf-filter[data-scope="life"] { color: var(--dsw-alias-state-success-primary); border-color: var(--dsw-alias-state-success-primary); }
 .dsh-tf-filter.is-active { background: var(--dsw-alias-bg-layer-2); }
 .dsh-tf-filter.is-active[data-scope="all"] { border-color: transparent; color: var(--dsw-alias-label-primary); }
-.dsh-tf-filter.is-active[data-scope="work"] { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 16%, transparent); }
+.dsh-tf-filter.is-active[data-scope="work"] { background: color-mix(in srgb, var(--dsh-tf-work) 16%, transparent); }
 .dsh-tf-filter.is-active[data-scope="life"] { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 16%, transparent); }
 .dsh-tf-filter-count { margin-left: 6px; font-size: 13px; font-variant-numeric: tabular-nums; opacity: .75; }
 .dsh-tf-sec { display: flex; align-items: center; gap: 8px; margin: 18px 0 4px; font-size: 13px; font-weight: 600; letter-spacing: .4px; color: var(--dsw-alias-label-secondary); }
@@ -143,7 +144,7 @@ window.__ModuleLoader__.load({
   font-size: 13px; line-height: 24px; font-weight: 500; color: var(--dsw-alias-label-secondary);
   font-variant-numeric: tabular-nums;
 }
-.dsh-tf-index.is-work { color: var(--dsw-alias-brand-primary); }
+.dsh-tf-index.is-work { color: var(--dsh-tf-work); }
 .dsh-tf-index.is-life { color: var(--dsw-alias-state-success-primary); }
 .dsh-tf-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .dsh-tf-text { font-size: 15px; line-height: 1.6; word-break: break-word; }

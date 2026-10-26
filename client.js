@@ -192,7 +192,8 @@ window.__ModuleLoader__.load({
 }
 .dsh-tf-btn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-btn.is-solid {
-  height: 28px; padding: 0 13px; border-radius: 8px; font-weight: 500;
+  display: inline-flex; align-items: center; gap: 6px;
+  height: 28px; padding: 0 12px; border-radius: 8px; font-weight: 500;
   background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base);
 }
 .dsh-tf-btn.is-solid:hover { background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); opacity: .86; }
@@ -579,6 +580,16 @@ window.__ModuleLoader__.load({
         'svg',
         { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
         h('path', { ...stroke, d: 'M2.6 6.1c0-.9.7-1.6 1.6-1.6h3.2l1.7 1.7h6.7c.9 0 1.6.7 1.6 1.6v6.1c0 .9-.7 1.6-1.6 1.6H4.2c-.9 0-1.6-.7-1.6-1.6z' }),
+      )
+    }
+
+    function IconRefresh(props) {
+      const size = props.size || 14
+      return h(
+        'svg',
+        { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
+        h('path', { ...stroke, d: 'M16.2 9.3a6.3 6.3 0 1 1-1.9-4.2' }),
+        h('path', { ...stroke, d: 'M16.4 3.4v4.4h-4.4' }),
       )
     }
 
@@ -1041,6 +1052,7 @@ window.__ModuleLoader__.load({
                 title: t('common.refresh'),
                 onClick: () => loadTodos(),
               },
+              h(IconRefresh, { size: 13 }),
               t('common.refresh'),
             ),
           ),

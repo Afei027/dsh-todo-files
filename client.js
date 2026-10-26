@@ -99,47 +99,63 @@ window.__ModuleLoader__.load({
 .dsh-tf-root {
   display: flex; flex-direction: column; height: 100%; min-height: 0;
   background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary);
-  font-family: inherit; font-size: 13px; line-height: 1.55;
+  font-family: inherit; font-size: 14px; line-height: 1.6;
   -webkit-font-smoothing: antialiased;
 }
 .dsh-tf-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 18px 22px 12px; flex: none; }
 .dsh-tf-headline { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
-.dsh-tf-title { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .2px; line-height: 1.3; }
-.dsh-tf-sub { font-size: 12px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.dsh-tf-title { margin: 0; font-size: 18px; font-weight: 600; letter-spacing: .2px; line-height: 1.3; }
+.dsh-tf-sub { font-size: 13px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dsh-tf-body { flex: 1; min-height: 0; overflow: auto; padding: 0 22px 20px; }
 .dsh-tf-pane { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .dsh-tf-error {
-  margin: 8px 0 4px; padding: 8px 12px; border-radius: 9px; font-size: 12px; line-height: 1.6;
+  margin: 8px 0 4px; padding: 8px 12px; border-radius: 9px; font-size: 13px; line-height: 1.6;
   border: 1px solid var(--dsw-alias-state-error-primary); color: var(--dsw-alias-label-primary);
   display: flex; align-items: center; gap: 10px;
 }
 .dsh-tf-list { display: flex; flex-direction: column; margin-top: 4px; }
-.dsh-tf-filters { display: flex; align-items: center; gap: 6px; margin: 0 0 8px; flex: none; }
+.dsh-tf-filters { display: flex; align-items: center; gap: 6px; margin: 0 0 10px; flex: none; }
 .dsh-tf-filter {
-  display: inline-flex; align-items: center; height: 26px; padding: 0 10px;
-  border-radius: 7px; border: 1px solid var(--dsw-alias-border-l1); background: transparent;
-  color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12px; cursor: pointer;
+  display: inline-flex; align-items: center; height: 29px; padding: 0 12px;
+  border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent;
+  color: var(--dsw-alias-label-secondary); font: inherit; font-size: 13px; cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
 .dsh-tf-filter:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l2); }
-.dsh-tf-filter.is-active { background: var(--dsw-alias-bg-layer-2); border-color: transparent; color: var(--dsw-alias-label-primary); }
-.dsh-tf-filter-count { margin-left: 6px; font-size: 11px; font-variant-numeric: tabular-nums; opacity: .7; }
-.dsh-tf-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.dsh-tf-filter.is-active[data-scope="all"] { background: var(--dsw-alias-bg-layer-2); border-color: transparent; color: var(--dsw-alias-label-primary); }
+.dsh-tf-filter.is-active[data-scope="work"] {
+  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
+  border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary);
+}
+.dsh-tf-filter.is-active[data-scope="life"] {
+  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 14%, transparent);
+  border-color: var(--dsw-alias-state-success-primary); color: var(--dsw-alias-state-success-primary);
+}
+.dsh-tf-filter-count { margin-left: 6px; font-size: 12px; font-variant-numeric: tabular-nums; opacity: .75; }
+.dsh-tf-dot { display: inline-block; width: 9px; height: 9px; border-radius: 50%; margin-right: 8px; vertical-align: 1px; }
 .dsh-tf-dot.is-work { background: var(--dsw-alias-brand-primary); }
 .dsh-tf-dot.is-life { background: var(--dsw-alias-state-success-primary); }
-.dsh-tf-sec { display: flex; align-items: center; gap: 8px; margin: 16px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: .5px; color: var(--dsw-alias-label-secondary); }
+.dsh-tf-sec { display: flex; align-items: center; gap: 8px; margin: 18px 0 4px; font-size: 12px; font-weight: 600; letter-spacing: .5px; color: var(--dsw-alias-label-secondary); }
 .dsh-tf-sec:first-child { margin-top: 2px; }
 .dsh-tf-sec-count { font-variant-numeric: tabular-nums; }
 .dsh-tf-sec-action { margin-left: auto; }
-.dsh-tf-row { display: flex; align-items: flex-start; gap: 10px; padding: 9px 8px; border-radius: 9px; transition: background .12s ease; }
+.dsh-tf-row {
+  display: flex; align-items: flex-start; gap: 10px; padding: 10px 8px 10px 10px;
+  border-radius: 9px; border-left: 3px solid transparent;
+  transition: background .12s ease, border-color .15s ease;
+}
+.dsh-tf-row.is-work { border-left-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 55%, transparent); }
+.dsh-tf-row.is-life { border-left-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 55%, transparent); }
 .dsh-tf-index {
-  flex: none; width: 18px; margin-top: 1px; text-align: right;
-  font-size: 11px; line-height: 18px; color: var(--dsw-alias-label-secondary);
+  flex: none; width: 20px; margin-top: 1px; text-align: right;
+  font-size: 12px; line-height: 20px; color: var(--dsw-alias-label-secondary);
   font-variant-numeric: tabular-nums;
 }
+.dsh-tf-index.is-work { color: var(--dsw-alias-brand-primary); }
+.dsh-tf-index.is-life { color: var(--dsw-alias-state-success-primary); }
 .dsh-tf-row:hover { background: var(--dsw-alias-bg-layer-1); }
 .dsh-tf-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
-.dsh-tf-text { font-size: 13px; line-height: 1.55; word-break: break-word; }
+.dsh-tf-text { font-size: 14px; line-height: 1.6; word-break: break-word; }
 .dsh-tf-row.is-done .dsh-tf-text { color: var(--dsw-alias-label-secondary); text-decoration: line-through; text-decoration-thickness: 1px; }
 .dsh-tf-check {
   flex: none; width: 18px; height: 18px; margin-top: 2px; padding: 0; border-radius: 6px;
@@ -152,24 +168,25 @@ window.__ModuleLoader__.load({
 .dsh-tf-check:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
 .dsh-tf-actions { display: flex; gap: 2px; flex: none; }
 .dsh-tf-icon-btn {
-  width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: transparent;
+  width: 28px; height: 28px; padding: 0; border: 0; border-radius: 8px; background: transparent;
   color: var(--dsw-alias-label-secondary); display: grid; place-items: center; cursor: pointer;
   opacity: 0; transition: opacity .12s ease, background .12s ease, color .12s ease;
 }
+.dsh-tf-emoji { font-size: 14px; line-height: 1; }
 .dsh-tf-row:hover .dsh-tf-icon-btn { opacity: 1; }
 .dsh-tf-icon-btn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-icon-btn:focus-visible { opacity: 1; outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 1px; }
 .dsh-tf-icon-btn.is-visible { opacity: 1; }
 .dsh-tf-empty {
-  margin-top: 12px; padding: 30px 18px; border-radius: 12px; text-align: center;
+  margin-top: 12px; padding: 32px 18px; border-radius: 12px; text-align: center;
   border: 1px dashed var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary);
-  font-size: 12.5px; line-height: 1.9;
+  font-size: 13px; line-height: 1.9;
 }
-.dsh-tf-empty strong { display: block; color: var(--dsw-alias-label-primary); font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+.dsh-tf-empty strong { display: block; color: var(--dsw-alias-label-primary); font-size: 14px; font-weight: 600; margin-bottom: 2px; }
 .dsh-tf-btn {
-  height: 26px; padding: 0 9px; border-radius: 7px; border: 1px solid transparent;
+  height: 28px; padding: 0 10px; border-radius: 8px; border: 1px solid transparent;
   background: transparent; color: var(--dsw-alias-label-secondary);
-  font: inherit; font-size: 12px; cursor: pointer; flex: none;
+  font: inherit; font-size: 13px; cursor: pointer; flex: none;
   transition: background .15s ease, color .15s ease;
 }
 .dsh-tf-btn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
@@ -191,7 +208,7 @@ window.__ModuleLoader__.load({
 .dsh-tf-say {
   flex: 1; min-width: 0; max-height: 108px; padding: 4px 0; border: 0; outline: none;
   background: transparent; color: var(--dsw-alias-label-primary);
-  font: inherit; font-size: 13px; line-height: 1.55; resize: none;
+  font: inherit; font-size: 14px; line-height: 1.6; resize: none;
 }
 .dsh-tf-say::placeholder { color: var(--dsw-alias-label-secondary); }
 .dsh-tf-send {
@@ -203,13 +220,13 @@ window.__ModuleLoader__.load({
 .dsh-tf-send:disabled { opacity: .4; cursor: default; filter: none; }
 .dsh-tf-sayhint {
   display: flex; align-items: center; gap: 10px; min-height: 17px; margin-top: 6px;
-  font-size: 11.5px; line-height: 1.5; color: var(--dsw-alias-label-secondary);
+  font-size: 12px; line-height: 1.5; color: var(--dsw-alias-label-secondary);
 }
 .dsh-tf-sayhint-text { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dsh-tf-sayhint.is-error .dsh-tf-sayhint-text { color: var(--dsw-alias-state-error-primary); }
 .dsh-tf-linkbtn {
   flex: none; padding: 0; border: 0; background: transparent; cursor: pointer;
-  font: inherit; font-size: 11.5px; color: var(--dsw-alias-brand-primary);
+  font: inherit; font-size: 12px; color: var(--dsw-alias-brand-primary);
 }
 .dsh-tf-linkbtn:hover { text-decoration: underline; }
 `
@@ -556,28 +573,6 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function IconLink(props) {
-      const size = props.size || 14
-      return h(
-        'svg',
-        { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
-        h('path', { ...stroke, d: 'M8.4 11.6 11.6 8.4' }),
-        h('path', { ...stroke, d: 'M12.1 5.6l1.1-1.1a2.9 2.9 0 0 1 4.1 4.1l-1.9 1.9a2.9 2.9 0 0 1-4.1 0' }),
-        h('path', { ...stroke, d: 'M7.9 14.4l-1.1 1.1a2.9 2.9 0 0 1-4.1-4.1l1.9-1.9a2.9 2.9 0 0 1 4.1 0' }),
-      )
-    }
-
-    function IconPortal(props) {
-      const size = props.size || 14
-      return h(
-        'svg',
-        { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
-        h('path', { ...stroke, d: 'M15.4 10a5.4 5.4 0 1 1-2.2-4.4' }),
-        h('path', { ...stroke, d: 'M15.7 3.4v3.6h-3.6' }),
-        h('circle', { cx: 10, cy: 10, r: 1.5, fill: 'currentColor', stroke: 'none' }),
-      )
-    }
-
     function IconTrash(props) {
       const size = props.size || 14
       return h(
@@ -636,10 +631,11 @@ window.__ModuleLoader__.load({
      */
     function TodoRow(props) {
       const { item, t } = props
+      const category = item.category === 'life' ? 'life' : 'work'
       return h(
         'div',
-        { className: `dsh-tf-row${item.done ? ' is-done' : ''}` },
-        props.index > 0 ? h('span', { className: 'dsh-tf-index' }, props.index) : null,
+        { className: `dsh-tf-row is-${category}${item.done ? ' is-done' : ''}` },
+        props.index > 0 ? h('span', { className: `dsh-tf-index is-${category}` }, props.index) : null,
         h(
           'button',
           {
@@ -660,7 +656,7 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'dsh-tf-text' },
             h('span', {
-              className: `dsh-tf-dot is-${item.category === 'life' ? 'life' : 'work'}`,
+              className: `dsh-tf-dot is-${category}`,
               title: item.category === 'life' ? t('filter.life') : t('filter.work'),
               'aria-hidden': true,
             }),
@@ -680,7 +676,7 @@ window.__ModuleLoader__.load({
                   'aria-label': t('todo.openConversation'),
                   onClick: () => props.onOpenConversation(item),
                 },
-                h(IconLink, { size: 14 }),
+                h('span', { className: 'dsh-tf-emoji', 'aria-hidden': true }, '🔗'),
               )
             : null,
           item.link
@@ -693,7 +689,7 @@ window.__ModuleLoader__.load({
                   'aria-label': t('todo.openTarget'),
                   onClick: () => props.onPortal(item),
                 },
-                h(IconPortal, { size: 14 }),
+                h('span', { className: 'dsh-tf-emoji', 'aria-hidden': true }, '🌀'),
               )
             : null,
           h(
@@ -923,6 +919,7 @@ window.__ModuleLoader__.load({
           {
             type: 'button',
             className: `dsh-tf-filter${scope === id ? ' is-active' : ''}`,
+            'data-scope': id,
             'aria-pressed': scope === id,
             onClick: () => setScope(id),
           },

@@ -33,8 +33,6 @@ window.__ModuleLoader__.load({
       'todo.empty.title': '还没有待办',
       'todo.empty.hint': '在上面跟我说一句，或者直接让我加一条。',
       'todo.emptyScope': '这一类还没有待办。',
-      'todo.badgeWork': '办公',
-      'todo.badgeLife': '生活',
       'filter.all': '全部',
       'filter.work': '办公',
       'filter.life': '生活',
@@ -68,8 +66,6 @@ window.__ModuleLoader__.load({
       'todo.empty.title': 'No todos yet',
       'todo.empty.hint': 'Say something above, or just ask me to add one.',
       'todo.emptyScope': 'Nothing in this list yet.',
-      'todo.badgeWork': 'Work',
-      'todo.badgeLife': 'Life',
       'filter.all': 'All',
       'filter.work': 'Work',
       'filter.life': 'Life',
@@ -128,13 +124,9 @@ window.__ModuleLoader__.load({
 .dsh-tf-filter:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l2); }
 .dsh-tf-filter.is-active { background: var(--dsw-alias-bg-layer-2); border-color: transparent; color: var(--dsw-alias-label-primary); }
 .dsh-tf-filter-count { margin-left: 6px; font-size: 11px; font-variant-numeric: tabular-nums; opacity: .7; }
-.dsh-tf-badge {
-  display: inline-block; margin-right: 6px; padding: 0 5px; border-radius: 4px;
-  font-size: 10.5px; line-height: 16px; vertical-align: 1px;
-  border: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary);
-}
-.dsh-tf-badge.is-work { color: var(--dsw-alias-brand-primary); border-color: color-mix(in srgb, var(--dsw-alias-brand-primary) 45%, transparent); }
-.dsh-tf-badge.is-life { color: var(--dsw-alias-state-success-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-success-primary) 45%, transparent); }
+.dsh-tf-dot { display: inline-block; width: 7px; height: 7px; border-radius: 50%; margin-right: 7px; vertical-align: 1px; }
+.dsh-tf-dot.is-work { background: var(--dsw-alias-brand-primary); }
+.dsh-tf-dot.is-life { background: var(--dsw-alias-state-success-primary); }
 .dsh-tf-sec { display: flex; align-items: center; gap: 8px; margin: 16px 0 4px; font-size: 11px; font-weight: 600; letter-spacing: .5px; color: var(--dsw-alias-label-secondary); }
 .dsh-tf-sec:first-child { margin-top: 2px; }
 .dsh-tf-sec-count { font-variant-numeric: tabular-nums; }
@@ -158,16 +150,6 @@ window.__ModuleLoader__.load({
 .dsh-tf-check:hover { border-color: var(--dsw-alias-brand-primary); }
 .dsh-tf-check[aria-checked="true"] { background: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); color: #fff; }
 .dsh-tf-check:focus-visible { outline: 2px solid var(--dsw-alias-brand-primary); outline-offset: 2px; }
-.dsh-tf-chip {
-  display: inline-flex; align-items: center; gap: 5px; max-width: 100%;
-  padding: 2px 9px 2px 7px; margin-top: 1px; border-radius: 7px;
-  border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2);
-  color: var(--dsw-alias-label-secondary); font: inherit; font-size: 11.5px; cursor: pointer;
-  transition: color .15s ease, border-color .15s ease;
-}
-.dsh-tf-chip:hover { color: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); }
-.dsh-tf-chip-name { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.dsh-tf-chip-icon { display: inline-flex; flex: none; }
 .dsh-tf-actions { display: flex; gap: 2px; flex: none; }
 .dsh-tf-icon-btn {
   width: 26px; height: 26px; padding: 0; border: 0; border-radius: 7px; background: transparent;
@@ -564,25 +546,6 @@ window.__ModuleLoader__.load({
       )
     }
 
-    function IconFile(props) {
-      const size = props.size || 14
-      return h(
-        'svg',
-        { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
-        h('path', { ...stroke, d: 'M5 2.9h6.1l3.9 3.9v10.1c0 .5-.4.9-.9.9H5.9c-.5 0-.9-.4-.9-.9V3.8c0-.5.4-.9.9-.9z' }),
-        h('path', { ...stroke, d: 'M11 3.1v4h3.9' }),
-      )
-    }
-
-    function IconFolder(props) {
-      const size = props.size || 14
-      return h(
-        'svg',
-        { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
-        h('path', { ...stroke, d: 'M2.6 6.1c0-.9.7-1.6 1.6-1.6h3.2l1.7 1.7h6.7c.9 0 1.6.7 1.6 1.6v6.1c0 .9-.7 1.6-1.6 1.6H4.2c-.9 0-1.6-.7-1.6-1.6z' }),
-      )
-    }
-
     function IconRefresh(props) {
       const size = props.size || 14
       return h(
@@ -669,7 +632,7 @@ window.__ModuleLoader__.load({
 
     /**
      * One todo row.
-     * @param props - `{ item, t, index, showCategory, onToggle, onRemove, onPortal, onOpenConversation }`.
+     * @param props - `{ item, t, index, onToggle, onRemove, onPortal, onOpenConversation }`.
      */
     function TodoRow(props) {
       const { item, t } = props
@@ -696,32 +659,13 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'dsh-tf-text' },
-            props.showCategory
-              ? h(
-                  'span',
-                  { className: `dsh-tf-badge is-${item.category === 'life' ? 'life' : 'work'}` },
-                  item.category === 'life' ? t('todo.badgeLife') : t('todo.badgeWork'),
-                )
-              : null,
+            h('span', {
+              className: `dsh-tf-dot is-${item.category === 'life' ? 'life' : 'work'}`,
+              title: item.category === 'life' ? t('filter.life') : t('filter.work'),
+              'aria-hidden': true,
+            }),
             item.title,
           ),
-          item.link
-            ? h(
-                'button',
-                {
-                  type: 'button',
-                  className: 'dsh-tf-chip',
-                  title: t('todo.openTarget'),
-                  onClick: () => props.onPortal(item),
-                },
-                h(
-                  'span',
-                  { className: 'dsh-tf-chip-icon' },
-                  item.link.kind === 'dir' ? h(IconFolder, { size: 12 }) : h(IconFile, { size: 12 }),
-                ),
-                h('span', { className: 'dsh-tf-chip-name' }, item.link.name),
-              )
-            : null,
         ),
         h(
           'div',
@@ -745,7 +689,7 @@ window.__ModuleLoader__.load({
                 {
                   type: 'button',
                   className: 'dsh-tf-icon-btn is-visible',
-                  title: t('todo.openTarget'),
+                  title: `${t('todo.openTarget')} · ${item.link.path}`,
                   'aria-label': t('todo.openTarget'),
                   onClick: () => props.onPortal(item),
                 },
@@ -967,7 +911,6 @@ window.__ModuleLoader__.load({
           item,
           t,
           index: orderIndex.get(item.id) || 0,
-          showCategory: scope === 'all',
           onToggle: toggleTodo,
           onRemove: removeTodo,
           onPortal: openPortalFor,

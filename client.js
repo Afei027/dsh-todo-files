@@ -25,7 +25,7 @@ window.__ModuleLoader__.load({
     // ---------------------------------------------------------------- text
 
     const ZH = {
-      'panel.title': '待办与文件',
+      'panel.title': '待办',
       'panel.sub': '{open} 条待办未完成',
       'panel.subEmpty': '还没有待办',
       'todo.empty.title': '还没有待办',
@@ -59,7 +59,7 @@ window.__ModuleLoader__.load({
     }
 
     const EN = {
-      'panel.title': 'Todo & Files',
+      'panel.title': 'Todos',
       'panel.sub': '{open} todo(s) open',
       'panel.subEmpty': 'Nothing open',
       'todo.empty.title': 'No todos yet',

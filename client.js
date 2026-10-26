@@ -476,17 +476,20 @@ window.__ModuleLoader__.load({
             const layout = service('layout')
             if (layout && typeof layout.selectPanel === 'function') layout.selectPanel('conversation')
           }
+          // The preview lives in the right column of the Session we just selected; that column mints
+          // its store on the frame after the switch, so give the navigation one beat before opening.
           window.setTimeout(() => {
+            let opened = false
             try {
               if (column && typeof column.openResource === 'function') {
                 column.openResource(fileAddress(originSessionId, path))
-                return
+                opened = true
               }
             } catch (error) {
               if (typeof console !== 'undefined' && console.error) console.error('[todo-files] openResource failed', error)
             }
-            call('fs.reveal', { path }).catch(() => {})
-          }, 0)
+            if (!opened) call('fs.reveal', { path }).catch(() => {})
+          }, 150)
         },
       }
     }

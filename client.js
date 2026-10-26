@@ -21,6 +21,8 @@ window.__ModuleLoader__.load({
     const ENDPOINT = '/todo-files/api'
     /** Loopback key the host route accepts; see `PANEL_TOKEN` in the host half. */
     const PANEL_KEY = 'tf-2f7c9a1e6b8d4c05'
+    /** Build marker: it rides every request so the host access log shows which panel build is live. */
+    const CLIENT_REV = '2026-10-26.1'
 
     // ---------------------------------------------------------------- text
 
@@ -280,7 +282,7 @@ window.__ModuleLoader__.load({
      */
     async function call(op, payload) {
       const base = endpointUrl()
-      const query = `op=${encodeURIComponent(op)}&args=${encodeURIComponent(JSON.stringify(payload || {}))}&key=${encodeURIComponent(PANEL_KEY)}`
+      const query = `op=${encodeURIComponent(op)}&args=${encodeURIComponent(JSON.stringify(payload || {}))}&key=${encodeURIComponent(PANEL_KEY)}&v=${encodeURIComponent(CLIENT_REV)}&l=${encodeURIComponent(i18nRuntime ? activeLocale(i18nRuntime) : 'en')}`
       const url = base.includes('?') ? `${base}&${query}` : `${base}?${query}`
       const controller = typeof AbortController === 'function' ? new AbortController() : null
       const timer = controller ? window.setTimeout(() => controller.abort(), 15000) : null
@@ -333,29 +335,54 @@ window.__ModuleLoader__.load({
       return `dsh-resource://file/session/${encode(sessionId)}/${encoded}`
     }
 
+    /** Context captured by `createI18n`, so transport calls can report the resolved language. */
+    let i18nRuntime = null
+
     /**
-     * Read the active locale and hand components a translate function that follows it.
+     * The language to render in, resolved at call time.
+     *
+     * The locale service may not be mounted when this plugin applies, so it is looked up on every
+     * call and the page language stands in before English.
+     * @param ctx - the plugin context.
+     */
+    function activeLocale(ctx) {
+      try {
+        const locale = typeof ctx.get === 'function' ? ctx.get('locale') : undefined
+        const snapshot = locale && typeof locale.getLocale === 'function' ? locale.getLocale() : null
+        if (snapshot && typeof snapshot.active === 'string' && snapshot.active) return snapshot.active
+      } catch {
+        // fall through to the page language
+      }
+      try {
+        if (typeof navigator !== 'undefined' && typeof navigator.language === 'string' && navigator.language) {
+          return navigator.language
+        }
+      } catch {
+        // fall through to English
+      }
+      return 'en'
+    }
+
+    /**
+     * Hand components a translate function that follows the active locale, and let them re-render
+     * when it changes.
      * @param ctx - the plugin context.
      */
     function createI18n(ctx) {
-      const locale = typeof ctx.get === 'function' ? ctx.get('locale') : undefined
+      i18nRuntime = ctx
       const listeners = new Set()
-      let active = 'en'
-      const read = () => {
-        try {
-          const snapshot = locale && typeof locale.getLocale === 'function' ? locale.getLocale() : null
-          if (snapshot && typeof snapshot.active === 'string' && snapshot.active) active = snapshot.active
-        } catch {
-          // keep the previous value
+      const translate = (key, vars) => {
+        const dict = String(activeLocale(ctx)).toLowerCase().indexOf('zh') === 0 ? ZH : EN
+        let text = dict[key] != null ? dict[key] : EN[key] != null ? EN[key] : key
+        if (vars) {
+          for (const name of Object.keys(vars)) text = text.split(`{${name}}`).join(String(vars[name]))
         }
+        return text
       }
-      read()
-      if (locale && typeof locale.subscribe === 'function' && typeof ctx.effect === 'function') {
-        ctx.effect(() => {
-          const off = locale.subscribe(() => {
-            read()
-            listeners.forEach((fn) => fn())
-          })
+      const follow = (locale) => {
+        if (!locale || typeof locale.subscribe !== 'function') return undefined
+        return ctx.effect(() => {
+          const off = locale.subscribe(() => listeners.forEach((fn) => fn()))
           return () => {
             try {
               off()
@@ -365,14 +392,9 @@ window.__ModuleLoader__.load({
           }
         })
       }
-      const translate = (key, vars) => {
-        const dict = String(active).toLowerCase().indexOf('zh') === 0 ? ZH : EN
-        let text = dict[key] != null ? dict[key] : EN[key] != null ? EN[key] : key
-        if (vars) {
-          for (const name of Object.keys(vars)) text = text.split(`{${name}}`).join(String(vars[name]))
-        }
-        return text
-      }
+      const immediate = typeof ctx.get === 'function' ? ctx.get('locale') : undefined
+      if (immediate) follow(immediate)
+      else if (typeof ctx.inject === 'function') ctx.inject(['locale'], (inner) => follow(inner.locale))
       return {
         t: translate,
         subscribe(fn) {

@@ -121,16 +121,13 @@ window.__ModuleLoader__.load({
   color: var(--dsw-alias-label-secondary); font: inherit; font-size: 14px; cursor: pointer;
   transition: background .15s ease, color .15s ease, border-color .15s ease;
 }
-.dsh-tf-filter:hover { color: var(--dsw-alias-label-primary); border-color: var(--dsw-alias-border-l2); }
-.dsh-tf-filter.is-active[data-scope="all"] { background: var(--dsw-alias-bg-layer-2); border-color: transparent; color: var(--dsw-alias-label-primary); }
-.dsh-tf-filter.is-active[data-scope="work"] {
-  background: color-mix(in srgb, var(--dsw-alias-brand-primary) 14%, transparent);
-  border-color: var(--dsw-alias-brand-primary); color: var(--dsw-alias-brand-primary);
-}
-.dsh-tf-filter.is-active[data-scope="life"] {
-  background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 14%, transparent);
-  border-color: var(--dsw-alias-state-success-primary); color: var(--dsw-alias-state-success-primary);
-}
+.dsh-tf-filter:hover { background: var(--dsw-alias-bg-layer-1); }
+.dsh-tf-filter[data-scope="work"] { color: var(--dsw-alias-brand-primary); border-color: var(--dsw-alias-brand-primary); }
+.dsh-tf-filter[data-scope="life"] { color: var(--dsw-alias-state-success-primary); border-color: var(--dsw-alias-state-success-primary); }
+.dsh-tf-filter.is-active { background: var(--dsw-alias-bg-layer-2); }
+.dsh-tf-filter.is-active[data-scope="all"] { border-color: transparent; color: var(--dsw-alias-label-primary); }
+.dsh-tf-filter.is-active[data-scope="work"] { background: color-mix(in srgb, var(--dsw-alias-brand-primary) 16%, transparent); }
+.dsh-tf-filter.is-active[data-scope="life"] { background: color-mix(in srgb, var(--dsw-alias-state-success-primary) 16%, transparent); }
 .dsh-tf-filter-count { margin-left: 6px; font-size: 13px; font-variant-numeric: tabular-nums; opacity: .75; }
 .dsh-tf-sec { display: flex; align-items: center; gap: 8px; margin: 18px 0 4px; font-size: 13px; font-weight: 600; letter-spacing: .4px; color: var(--dsw-alias-label-secondary); }
 .dsh-tf-sec:first-child { margin-top: 2px; }

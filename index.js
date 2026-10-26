@@ -75,6 +75,8 @@ export function apply(ctx, rawConfig) {
     }
     const link = normalizeLink(raw.link)
     if (link) item.link = link
+    const origin = normalizeOrigin(raw.origin)
+    if (origin) item.origin = origin
     return item
   }
 
@@ -86,6 +88,17 @@ export function apply(ctx, rawConfig) {
    */
   function normalizeCategory(value) {
     return value === 'life' ? 'life' : 'work'
+  }
+
+  /**
+   * Coerce an origin: the Session the todo was created from, so its link can return there.
+   * @param raw - candidate origin.
+   * @returns `{ sessionId }`, or null.
+   */
+  function normalizeOrigin(raw) {
+    if (!raw || typeof raw !== 'object') return null
+    const sessionId = typeof raw.sessionId === 'string' ? raw.sessionId.trim() : ''
+    return sessionId ? { sessionId } : null
   }
 
   /**
@@ -216,18 +229,20 @@ export function apply(ctx, rawConfig) {
 
     /**
      * Append one todo.
-     * @param payload - `{ title, link?, category? }`.
+     * @param payload - `{ title, link?, category?, origin? }`.
      */
     async 'todos.add'(payload) {
       const title = String((payload && payload.title) || '').trim()
       if (!title) throw fail('待办内容不能为空')
       const link = normalizeLink(payload && payload.link)
+      const origin = normalizeOrigin(payload && payload.origin)
       const category = normalizeCategory(payload && payload.category)
       return enqueue(async () => {
         await loadState()
         const now = Date.now()
         const item = { id: randomUUID(), title: title.slice(0, 800), done: false, category, createdAt: now, updatedAt: now }
         if (link) item.link = link
+        if (origin) item.origin = origin
         state.items = sortItems([...state.items, item])
         await persist()
         return { item: { ...item } }
@@ -252,6 +267,11 @@ export function apply(ctx, rawConfig) {
         }
         if (typeof patch.done === 'boolean') item.done = patch.done
         if (typeof patch.category === 'string') item.category = normalizeCategory(patch.category)
+        if (Object.prototype.hasOwnProperty.call(patch, 'origin')) {
+          const origin = normalizeOrigin(patch.origin)
+          if (origin) item.origin = origin
+          else delete item.origin
+        }
         if (Object.prototype.hasOwnProperty.call(patch, 'link')) {
           if (patch.link === null) delete item.link
           else {
@@ -551,9 +571,11 @@ export function apply(ctx, rawConfig) {
       kind: 'other',
       rawInput: args,
     }),
-    async execute(args) {
+    async execute(args, exec) {
       const input = args && typeof args === 'object' ? args : {}
       const action = typeof input.action === 'string' ? input.action : 'list'
+      // The calling agent's Session is the todo's origin, so its card can send the user back there.
+      const origin = exec && exec.agent && exec.agent.id ? { sessionId: String(exec.agent.id) } : undefined
       const text = (value) => ({ text: value })
       const describe = (item) => {
         const mark = item.done ? '[x]' : '[ ]'
@@ -576,6 +598,7 @@ export function apply(ctx, rawConfig) {
         const value = await ops['todos.add']({
           title: input.title,
           category: input.category === 'life' ? 'life' : 'work',
+          origin,
           link: typeof input.path === 'string' && input.path.trim()
             ? { path: input.path.trim(), kind: input.kind === 'dir' ? 'dir' : 'file' }
             : undefined,

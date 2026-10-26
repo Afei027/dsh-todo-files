@@ -42,7 +42,8 @@ window.__ModuleLoader__.load({
       'todo.markOpen': '标记未完成',
       'todo.remove': '删除这条待办',
       'todo.clearDone': '清除已完成',
-      'todo.openFile': '在对话里打开 {name}',
+      'todo.openConversation': '回到这条待办所在的对话',
+      'todo.openTarget': '传送门：直接打开这个文件或目录',
       'todo.reveal': '在资源管理器中显示',
       'say.placeholder': '跟 DSH 说一句：帮我找找周报模板，加进待办…',
       'say.send': '发送给 DSH',
@@ -76,7 +77,8 @@ window.__ModuleLoader__.load({
       'todo.markOpen': 'Mark open',
       'todo.remove': 'Delete this todo',
       'todo.clearDone': 'Clear done',
-      'todo.openFile': 'Open {name} in the conversation',
+      'todo.openConversation': 'Go to the conversation this todo came from',
+      'todo.openTarget': 'Portal: open the file or folder directly',
       'todo.reveal': 'Show in file manager',
       'say.placeholder': 'Tell DSH what you need: find last week’s template and add it to my todos…',
       'say.send': 'Send to DSH',
@@ -451,24 +453,33 @@ window.__ModuleLoader__.load({
           if (typeof ui.startSession === 'function') ui.startSession()
         },
         /**
-         * Return to the Conversation and open one linked path there.
+         * Open one linked path directly — the "portal".
+         *
+         * A folder, or a file with no recorded origin, is handed to the operating system. A file
+         * whose origin Session is known opens in that Session's own preview: the panel switches
+         * back to that conversation first, because the preview is authorized and hosted there.
          * @param target - absolute path of the linked file or folder.
          * @param kind - `'file'` opens the preview; anything else is revealed.
+         * @param originSessionId - Session the todo came from, when known.
          */
-        async openPath(target, kind) {
+        async openPath(target, kind, originSessionId) {
           const path = String(target || '')
           if (!path) return
-          if (kind !== 'file' || !lastSessionId) {
+          if (kind !== 'file' || !originSessionId) {
             await call('fs.reveal', { path })
             return
           }
-          const layout = service('layout')
+          const ui = service('uiWorkspace')
           const column = service('sidebarRight')
-          if (layout && typeof layout.selectPanel === 'function') layout.selectPanel('conversation')
+          if (ui && typeof ui.openSession === 'function') ui.openSession(originSessionId)
+          else {
+            const layout = service('layout')
+            if (layout && typeof layout.selectPanel === 'function') layout.selectPanel('conversation')
+          }
           window.setTimeout(() => {
             try {
               if (column && typeof column.openResource === 'function') {
-                column.openResource(fileAddress(lastSessionId, path))
+                column.openResource(fileAddress(originSessionId, path))
                 return
               }
             } catch (error) {
@@ -514,6 +525,28 @@ window.__ModuleLoader__.load({
         'svg',
         { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
         h('path', { ...stroke, d: 'M2.6 6.1c0-.9.7-1.6 1.6-1.6h3.2l1.7 1.7h6.7c.9 0 1.6.7 1.6 1.6v6.1c0 .9-.7 1.6-1.6 1.6H4.2c-.9 0-1.6-.7-1.6-1.6z' }),
+      )
+    }
+
+    function IconLink(props) {
+      const size = props.size || 14
+      return h(
+        'svg',
+        { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
+        h('path', { ...stroke, d: 'M8.4 11.6 11.6 8.4' }),
+        h('path', { ...stroke, d: 'M12.1 5.6l1.1-1.1a2.9 2.9 0 0 1 4.1 4.1l-1.9 1.9a2.9 2.9 0 0 1-4.1 0' }),
+        h('path', { ...stroke, d: 'M7.9 14.4l-1.1 1.1a2.9 2.9 0 0 1-4.1-4.1l1.9-1.9a2.9 2.9 0 0 1 4.1 0' }),
+      )
+    }
+
+    function IconPortal(props) {
+      const size = props.size || 14
+      return h(
+        'svg',
+        { viewBox: '0 0 20 20', width: size, height: size, 'aria-hidden': true },
+        h('path', { ...stroke, d: 'M15.4 10a5.4 5.4 0 1 1-2.2-4.4' }),
+        h('path', { ...stroke, d: 'M15.7 3.4v3.6h-3.6' }),
+        h('circle', { cx: 10, cy: 10, r: 1.5, fill: 'currentColor', stroke: 'none' }),
       )
     }
 
@@ -571,7 +604,7 @@ window.__ModuleLoader__.load({
 
     /**
      * One todo row.
-     * @param props - `{ item, t, onToggle, onRemove, onOpenLink }`.
+     * @param props - `{ item, t, index, showCategory, onToggle, onRemove, onPortal, onOpenConversation }`.
      */
     function TodoRow(props) {
       const { item, t } = props
@@ -613,8 +646,8 @@ window.__ModuleLoader__.load({
                 {
                   type: 'button',
                   className: 'dsh-tf-chip',
-                  title: t('todo.openFile', { name: item.link.path }),
-                  onClick: () => props.onOpenLink(item.link),
+                  title: t('todo.openTarget'),
+                  onClick: () => props.onPortal(item),
                 },
                 h(
                   'span',
@@ -628,6 +661,32 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'dsh-tf-actions' },
+          item.origin && item.origin.sessionId
+            ? h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dsh-tf-icon-btn is-visible',
+                  title: t('todo.openConversation'),
+                  'aria-label': t('todo.openConversation'),
+                  onClick: () => props.onOpenConversation(item),
+                },
+                h(IconLink, { size: 14 }),
+              )
+            : null,
+          item.link
+            ? h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dsh-tf-icon-btn is-visible',
+                  title: t('todo.openTarget'),
+                  'aria-label': t('todo.openTarget'),
+                  onClick: () => props.onPortal(item),
+                },
+                h(IconPortal, { size: 14 }),
+              )
+            : null,
           h(
             'button',
             {
@@ -763,9 +822,20 @@ window.__ModuleLoader__.load({
         }
       }
 
-      const openLink = (link) => {
-        if (!bridge) return
-        bridge.openPath(link.path, link.kind).catch((failure) => setError(messageOf(failure)))
+      /** The portal: open the linked file or folder itself. */
+      const openPortalFor = (item) => {
+        if (!item || !item.link || !bridge) return
+        const origin = item.origin && item.origin.sessionId ? item.origin.sessionId : ''
+        bridge
+          .openPath(item.link.path, item.link.kind, origin)
+          .catch((failure) => setError(messageOf(failure)))
+      }
+
+      /** The link: return to the conversation this todo was created from. */
+      const openConversationFor = (item) => {
+        const sessionId = item && item.origin && item.origin.sessionId
+        if (!sessionId || !bridge) return
+        bridge.open(sessionId)
       }
 
       const sendMessage = async () => {
@@ -835,7 +905,8 @@ window.__ModuleLoader__.load({
           showCategory: scope === 'all',
           onToggle: toggleTodo,
           onRemove: removeTodo,
-          onOpenLink: openLink,
+          onPortal: openPortalFor,
+          onOpenConversation: openConversationFor,
         })
 
       const scopeButton = (id, label, count) =>

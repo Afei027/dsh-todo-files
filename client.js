@@ -43,7 +43,7 @@ window.__ModuleLoader__.load({
       'todo.remove': '删除这条待办',
       'todo.clearDone': '清除已完成',
       'todo.openConversation': '回到这条待办所在的对话',
-      'todo.openTarget': '传送门：直接打开这个文件或目录',
+      'todo.openTarget': '传送门：打开这个文件所在的文件夹',
       'todo.reveal': '在资源管理器中显示',
       'say.placeholder': '跟 DSH 说一句：帮我找找周报模板，加进待办…',
       'say.send': '发送给 DSH',
@@ -57,8 +57,7 @@ window.__ModuleLoader__.load({
       'say.empty': '先写点什么再发。',
       'common.retry': '重试',
       'common.refresh': '刷新',
-      'portal.preview': '已在右侧打开预览：{name}',
-      'portal.reveal': '已在资源管理器打开：{name}',
+      'portal.reveal': '已在资源管理器打开文件夹：{name}',
     }
 
     const EN = {
@@ -78,7 +77,7 @@ window.__ModuleLoader__.load({
       'todo.remove': 'Delete this todo',
       'todo.clearDone': 'Clear done',
       'todo.openConversation': 'Go to the conversation this todo came from',
-      'todo.openTarget': 'Portal: open the file or folder directly',
+      'todo.openTarget': 'Portal: open the folder that holds this file',
       'todo.reveal': 'Show in file manager',
       'say.placeholder': 'Tell DSH what you need: find last week’s template and add it to my todos…',
       'say.send': 'Send to DSH',
@@ -92,8 +91,7 @@ window.__ModuleLoader__.load({
       'say.empty': 'Write something first.',
       'common.retry': 'Retry',
       'common.refresh': 'Refresh',
-      'portal.preview': 'Opened the preview: {name}',
-      'portal.reveal': 'Opened in the file manager: {name}',
+      'portal.reveal': 'Opened the folder in the file manager: {name}',
     }
 
     // ---------------------------------------------------------------- css
@@ -343,21 +341,14 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Build the workspace file address the Sidebar's preview claims.
-     *
-     * The grammar is `dsh-resource://file/session/<sessionId>/<path>`; the Session authorizes the
-     * Host read, and a path outside that Session's workspace stays absolute. Every segment is
-     * component-encoded with `:` kept literal.
-     * @param sessionId - the Session whose authority the read uses.
+     * The folder that holds one path: a file's parent directory, or a drive root for a top-level file.
      * @param target - absolute path on this computer.
      */
-    function fileAddress(sessionId, target) {
-      if (!sessionId) return ''
-      const path = String(target || '').replace(/\\/g, '/').replace(/^\.\//, '')
-      if (!path) return ''
-      const encode = (part) => encodeURIComponent(part).replace(/%3A/gi, ':')
-      const encoded = path.split('/').map(encode).join('/')
-      return `dsh-resource://file/session/${encode(sessionId)}/${encoded}`
+    function parentFolder(target) {
+      const text = String(target || '').replace(/[\\/]+$/, '')
+      const cut = text.replace(/[\\/][^\\/]+$/, '')
+      if (!cut) return text
+      return /^[A-Za-z]:$/.test(cut) ? `${cut}\\` : cut
     }
 
     /** Context captured by `createI18n`, so transport calls can report the resolved language. */
@@ -529,47 +520,22 @@ window.__ModuleLoader__.load({
           if (typeof ui.startSession === 'function') ui.startSession()
         },
         /**
-         * Open one linked path — the "portal".
+         * Open the folder around one linked path — the "portal".
          *
-         * A file opens in DSH's own preview (the visible, in-app route) using the todo's origin
-         * Session, or the Conversation currently on screen when the todo has no origin. A folder has
-         * no in-app view, so it goes to the file manager; the caller reports which one happened,
-         * because an Explorer window can open behind the app and look like nothing at all.
+         * A todo's link names a document; what the portal is for is the directory it lives in, so a
+         * file opens its parent folder and a folder opens itself. The file manager is the only
+         * surface that can show a path outside this Session's workspace, and because such a window
+         * can appear behind the app, the caller reports where it went.
          * @param target - absolute path of the linked file or folder.
-         * @param kind - `'file'` opens the preview; anything else is revealed.
-         * @param originSessionId - Session the todo came from, when known.
-         * @returns whether an in-app preview was requested.
+         * @param kind - `'dir'` opens the path itself; anything else opens its parent folder.
+         * @returns the folder that was opened.
          */
-        async openPath(target, kind, originSessionId) {
+        async openPath(target, kind) {
           const path = String(target || '')
-          if (!path) return { preview: false }
-          const sessionId = originSessionId || lastSessionId
-          if (kind === 'file' && sessionId) {
-            const ui = service('uiWorkspace')
-            const column = service('sidebarRight')
-            if (ui && typeof ui.openSession === 'function') ui.openSession(sessionId)
-            else {
-              const layout = service('layout')
-              if (layout && typeof layout.selectPanel === 'function') layout.selectPanel('conversation')
-            }
-            // The preview lives in the right column of the Session we just selected; that column
-            // mints its store on the frame after the switch, so give the navigation one beat.
-            window.setTimeout(() => {
-              let opened = false
-              try {
-                if (column && typeof column.openResource === 'function') {
-                  column.openResource(fileAddress(sessionId, path))
-                  opened = true
-                }
-              } catch (error) {
-                if (typeof console !== 'undefined' && console.error) console.error('[todo-files] openResource failed', error)
-              }
-              if (!opened) call('fs.reveal', { path }).catch(() => {})
-            }, 150)
-            return { preview: true }
-          }
-          await call('fs.reveal', { path })
-          return { preview: false }
+          if (!path) return { folder: '' }
+          const folder = kind === 'dir' ? path : parentFolder(path)
+          await call('fs.reveal', { path: folder })
+          return { folder }
         },
       }
     }
@@ -853,17 +819,12 @@ window.__ModuleLoader__.load({
         }
       }
 
-      /** The portal: open the linked file or folder itself. */
+      /** The portal: open the folder that holds the linked file, or the linked folder itself. */
       const openPortalFor = async (item) => {
         if (!item || !item.link || !bridge) return
-        const origin = item.origin && item.origin.sessionId ? item.origin.sessionId : ''
         try {
-          const outcome = await bridge.openPath(item.link.path, item.link.kind, origin)
-          setNotice(
-            outcome && outcome.preview
-              ? t('portal.preview', { name: item.link.name })
-              : t('portal.reveal', { name: item.link.path }),
-          )
+          const outcome = await bridge.openPath(item.link.path, item.link.kind)
+          setNotice(t('portal.reveal', { name: outcome && outcome.folder ? outcome.folder : item.link.path }))
           window.setTimeout(() => setNotice(''), 6000)
         } catch (failure) {
           setError(messageOf(failure))

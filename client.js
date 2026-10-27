@@ -159,6 +159,13 @@ window.__ModuleLoader__.load({
 .dsh-tf-sec { display: flex; align-items: center; gap: 8px; margin: 18px 0 4px; font-size: 13px; font-weight: 600; letter-spacing: .4px; color: var(--dsw-alias-label-secondary); }
 .dsh-tf-sec:first-child { margin-top: 2px; }
 .dsh-tf-sec-count { font-variant-numeric: tabular-nums; }
+.dsh-tf-sec-toggle {
+  display: inline-flex; align-items: center; gap: 6px; padding: 0; border: 0;
+  background: transparent; font: inherit; color: inherit; cursor: pointer;
+}
+.dsh-tf-sec-toggle:hover { color: var(--dsw-alias-label-primary); }
+.dsh-tf-chevron { display: inline-block; font-size: 11px; transition: transform .15s ease; }
+.dsh-tf-chevron.is-open { transform: rotate(90deg); }
 .dsh-tf-sec-action { margin-left: auto; }
 .dsh-tf-row {
   display: flex; align-items: flex-start; gap: 10px; padding: 11px 10px;
@@ -750,6 +757,7 @@ window.__ModuleLoader__.load({
       const [busy, setBusy] = useState(true)
       const [error, setError] = useState('')
       const [notice, setNotice] = useState('')
+      const [showDone, setShowDone] = useState(false)
       const [say, setSay] = useState('')
       const [sendState, setSendState] = useState(null)
       const [scope, setScope] = useState('all')
@@ -1077,11 +1085,21 @@ window.__ModuleLoader__.load({
                       h(
                         'h2',
                         { className: 'dsh-tf-sec' },
-                        t('todo.done'),
-                        h('span', { className: 'dsh-tf-sec-count' }, doneItems.length),
+                        h(
+                          'button',
+                          {
+                            type: 'button',
+                            className: 'dsh-tf-sec-toggle',
+                            'aria-expanded': showDone,
+                            onClick: () => setShowDone((value) => !value),
+                          },
+                          h('span', { className: `dsh-tf-chevron${showDone ? ' is-open' : ''}` }, '▸'),
+                          t('todo.done'),
+                          h('span', { className: 'dsh-tf-sec-count' }, doneItems.length),
+                        ),
                         h('button', { type: 'button', className: 'dsh-tf-btn dsh-tf-sec-action', onClick: clearDone }, t('todo.clearDone')),
                       ),
-                      doneItems.map(row),
+                      showDone ? doneItems.map(row) : null,
                     )
                   : null,
               ),

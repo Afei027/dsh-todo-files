@@ -13,12 +13,12 @@
   ],
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/OWNER/dsh-todo-files.git"
+    "url": "git+https://github.com/Afei027/dsh-todo-files.git"
   },
   "bugs": {
-    "url": "https://github.com/OWNER/dsh-todo-files/issues"
+    "url": "https://github.com/Afei027/dsh-todo-files/issues"
   },
-  "homepage": "https://github.com/OWNER/dsh-todo-files#readme",
+  "homepage": "https://github.com/Afei027/dsh-todo-files#readme",
   "exports": {
     ".": "./index.js",
     "./client": "./client.js",

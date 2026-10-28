@@ -21,15 +21,15 @@
 **桌面端 / Web（推荐）**：设置 → 插件 → 添加，粘贴
 
 ```
-github:OWNER/dsh-todo-files
+github:Afei027/dsh-todo-files
 ```
 
-也可以直接让 agent 装：「用 plugin_manager 安装 github:OWNER/dsh-todo-files」。
+也可以直接让 agent 装：「用 plugin_manager 安装 github:Afei027/dsh-todo-files」。
 
 **CLI**（`dsh plugin` 会把参数转给 profile 目录里的 pnpm）：
 
 ```bash
-dsh plugin --profile web add github:OWNER/dsh-todo-files
+dsh plugin --profile web add github:Afei027/dsh-todo-files
 ```
 
 本地开发时可以直接装目录：
@@ -59,6 +59,25 @@ dsh plugin --profile web add link:/absolute/path/to/dsh-todo-files
 
 改 `client.js` 会热更新到页面；改 `index.js`（主机侧）需要重载这一行插件，例如在插件页关掉再打开。
 
+## 发布
+
+推到 GitHub 后别人一条命令就能装：`github:Afei027/dsh-todo-files`。
+
+```bash
+git remote add origin https://github.com/Afei027/dsh-todo-files.git
+git push -u origin main
+git tag v1.0.0 && git push --tags     # 可选，方便按版本装：github:Afei027/dsh-todo-files#v1.0.0
+```
+
+不想走 GitHub 也可以直接发文件夹：对方解压后
+
+```bash
+dsh plugin --profile web add link:D:\path\to\dsh-todo-files
+```
+
+插件没有构建步骤，也不需要联网；对方第一次用时数据目录会自动创建。
+
 ## 许可
 
-MIT。`LICENSE` 里的版权人记得改成你自己；`package.json` 里的 `OWNER` 换成你的 GitHub 用户名。
+MIT，版权人 Afei027。
+

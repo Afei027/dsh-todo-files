@@ -77,7 +77,32 @@ export function apply(ctx, rawConfig) {
     if (link) item.link = link
     const origin = normalizeOrigin(raw.origin)
     if (origin) item.origin = origin
+    const due = normalizeDue(raw.due)
+    if (due) item.due = due
     return item
+  }
+
+  /**
+   * Coerce a due date into `YYYY-MM-DD`.
+   *
+   * A due date is a field, not a phrase inside the title: the panel formats it, colours it by
+   * urgency and can sort on it later. Anything unparseable is dropped rather than guessed.
+   * @param value - `YYYY-MM-DD`, `YYYY/MM/DD`, or an ISO timestamp.
+   * @returns the normalized day, or ''.
+   */
+  function normalizeDue(value) {
+    const text = typeof value === 'string' ? value.trim() : ''
+    if (!text) return ''
+    const match = /^(\d{4})[-/](\d{1,2})[-/](\d{1,2})/.exec(text)
+    if (!match) return ''
+    const year = Number(match[1])
+    const month = Number(match[2])
+    const day = Number(match[3])
+    if (month < 1 || month > 12 || day < 1 || day > 31) return ''
+    const date = new Date(year, month - 1, day)
+    if (date.getFullYear() !== year || date.getMonth() !== month - 1 || date.getDate() !== day) return ''
+    const pad = (part) => String(part).padStart(2, '0')
+    return `${year}-${pad(month)}-${pad(day)}`
   }
 
   /**
@@ -229,7 +254,7 @@ export function apply(ctx, rawConfig) {
 
     /**
      * Append one todo.
-     * @param payload - `{ title, link?, category?, origin? }`.
+     * @param payload - `{ title, link?, category?, origin?, due? }`.
      */
     async 'todos.add'(payload) {
       const title = String((payload && payload.title) || '').trim()
@@ -237,12 +262,14 @@ export function apply(ctx, rawConfig) {
       const link = normalizeLink(payload && payload.link)
       const origin = normalizeOrigin(payload && payload.origin)
       const category = normalizeCategory(payload && payload.category)
+      const due = normalizeDue(payload && payload.due)
       return enqueue(async () => {
         await loadState()
         const now = Date.now()
         const item = { id: randomUUID(), title: title.slice(0, 800), done: false, category, createdAt: now, updatedAt: now }
         if (link) item.link = link
         if (origin) item.origin = origin
+        if (due) item.due = due
         state.items = sortItems([...state.items, item])
         await persist()
         return { item: { ...item } }
@@ -250,8 +277,8 @@ export function apply(ctx, rawConfig) {
     },
 
     /**
-     * Patch one todo (title, done, category, or the linked path).
-     * @param payload - `{ id, patch: { title?, done?, category?, link? } }`.
+     * Patch one todo (title, done, category, due, or the linked path).
+     * @param payload - `{ id, patch: { title?, done?, category?, due?, link? } }`.
      */
     async 'todos.update'(payload) {
       const id = String((payload && payload.id) || '')
@@ -267,6 +294,11 @@ export function apply(ctx, rawConfig) {
         }
         if (typeof patch.done === 'boolean') item.done = patch.done
         if (typeof patch.category === 'string') item.category = normalizeCategory(patch.category)
+        if (Object.prototype.hasOwnProperty.call(patch, 'due')) {
+          const due = normalizeDue(patch.due)
+          if (due) item.due = due
+          else delete item.due
+        }
         if (Object.prototype.hasOwnProperty.call(patch, 'origin')) {
           const origin = normalizeOrigin(patch.origin)
           if (origin) item.origin = origin
@@ -551,6 +583,7 @@ export function apply(ctx, rawConfig) {
       'Use `action: "list"` before claiming what is on it, and "add" when the user asks to be reminded of something.',
       'Every item belongs to `work` (办公任务) or `life` (个人生活); pick the one the user implies, and ask only when it is genuinely unclear.',
       'An item may carry ONE linked path — a file or folder on this computer.',
+      'An item may carry a `due` date (YYYY-MM-DD). Put the deadline there, never inside the title: the panel renders it as a dated label and colours it by urgency.',
     ].join(' '),
     parameters: {
       type: 'object',
@@ -588,6 +621,11 @@ export function apply(ctx, rawConfig) {
           enum: ['file', 'dir'],
           description: 'What the linked path is; `file` when omitted.',
         },
+        due: {
+          type: 'string',
+          description:
+            'Deadline as YYYY-MM-DD (empty string clears it). Pass the day here instead of writing it inside the title — the panel renders it as a dated label.',
+        },
       },
     },
     output: {
@@ -616,8 +654,9 @@ export function apply(ctx, rawConfig) {
       const describe = (item) => {
         const mark = item.done ? '[x]' : '[ ]'
         const scope = item.category === 'life' ? '[生活]' : '[办公]'
+        const due = item.due ? ` 截止 ${item.due}` : ''
         const link = item.link ? ` → ${item.link.path}` : ''
-        return `${mark} ${scope} ${item.title}${link}${item.done ? '' : `  (id: ${item.id})`}`
+        return `${mark} ${scope} ${item.title}${due}${link}${item.done ? '' : `  (id: ${item.id})`}`
       }
       if (action === 'list') {
         const value = await ops['todos.list']()
@@ -635,6 +674,7 @@ export function apply(ctx, rawConfig) {
           title: input.title,
           category: input.category === 'life' ? 'life' : 'work',
           origin,
+          due: typeof input.due === 'string' ? input.due : undefined,
           link: typeof input.path === 'string' && input.path.trim()
             ? { path: input.path.trim(), kind: input.kind === 'dir' ? 'dir' : 'file' }
             : undefined,
@@ -646,12 +686,13 @@ export function apply(ctx, rawConfig) {
         if (typeof input.title === 'string' && input.title.trim()) patch.title = input.title
         if (typeof input.done === 'boolean') patch.done = input.done
         if (input.category === 'work' || input.category === 'life') patch.category = input.category
+        if (typeof input.due === 'string') patch.due = input.due
         if (typeof input.path === 'string') {
           patch.link = input.path.trim()
             ? { path: input.path.trim(), kind: input.kind === 'dir' ? 'dir' : 'file' }
             : null
         }
-        if (!Object.keys(patch).length) return text('Nothing to update: pass title, done, category, or path.')
+        if (!Object.keys(patch).length) return text('Nothing to update: pass title, done, category, due, or path.')
         const value = await ops['todos.update']({ id: input.id, patch })
         return text(`Updated: ${describe(value.item)}`)
       }

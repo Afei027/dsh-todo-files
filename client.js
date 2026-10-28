@@ -45,6 +45,9 @@ window.__ModuleLoader__.load({
       'todo.openConversation': '回到这条待办所在的对话',
       'todo.openTarget': '传送门：打开这个文件所在的文件夹',
       'todo.reveal': '在资源管理器中显示',
+      'due.today': '今天',
+      'due.tomorrow': '明天',
+      'due.overdue': '已过期',
       'say.placeholder': '跟 DSH 说一句：帮我找找周报模板，加进待办…',
       'say.send': '发送给 DSH',
       'say.hint': '回车发送 · Shift+Enter 换行',
@@ -79,6 +82,9 @@ window.__ModuleLoader__.load({
       'todo.openConversation': 'Go to the conversation this todo came from',
       'todo.openTarget': 'Portal: open the folder that holds this file',
       'todo.reveal': 'Show in file manager',
+      'due.today': 'Today',
+      'due.tomorrow': 'Tomorrow',
+      'due.overdue': 'Overdue',
       'say.placeholder': 'Tell DSH what you need: find last week’s template and add it to my todos…',
       'say.send': 'Send to DSH',
       'say.hint': 'Enter to send · Shift+Enter for a new line',
@@ -179,6 +185,16 @@ window.__ModuleLoader__.load({
 .dsh-tf-index.is-life { color: var(--dsw-alias-state-success-primary); }
 .dsh-tf-main { flex: 1; min-width: 0; display: flex; flex-direction: column; align-items: flex-start; gap: 2px; }
 .dsh-tf-text { font-size: 15px; line-height: 1.6; word-break: break-word; }
+.dsh-tf-due {
+  display: inline-block; margin-left: 8px; padding: 0 7px; border-radius: 6px;
+  font-size: 12.5px; line-height: 19px; vertical-align: 1px; font-variant-numeric: tabular-nums;
+  border: 1px solid var(--dsw-alias-border-l1); color: var(--dsw-alias-label-secondary);
+  background: var(--dsw-alias-bg-layer-1); white-space: nowrap;
+}
+.dsh-tf-due.is-soon { color: var(--dsh-tf-work); border-color: color-mix(in srgb, var(--dsh-tf-work) 38%, transparent); background: color-mix(in srgb, var(--dsh-tf-work) 9%, transparent); }
+.dsh-tf-due.is-today { color: #a45a00; border-color: color-mix(in srgb, #d97706 45%, transparent); background: color-mix(in srgb, #d97706 12%, transparent); }
+.dsh-tf-due.is-overdue { color: var(--dsw-alias-state-error-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, transparent); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent); }
+.dsh-tf-row.is-done .dsh-tf-due { opacity: .6; }
 .dsh-tf-row.is-done .dsh-tf-text { color: var(--dsw-alias-label-secondary); text-decoration: line-through; text-decoration-thickness: 1px; }
 .dsh-tf-check {
   flex: none; width: 19px; height: 19px; margin-top: 3px; padding: 0; border-radius: 6px;
@@ -338,6 +354,26 @@ window.__ModuleLoader__.load({
         )
       }
       return decoded.value
+    }
+
+    /**
+     * Turn a `YYYY-MM-DD` deadline into the short label the row shows.
+     * @param due - stored due date.
+     * @param t - translator.
+     * @returns `{ text, tone }`, or null when there is no usable date.
+     */
+    function dueChip(due, t) {
+      const match = /^(\d{4})-(\d{2})-(\d{2})$/.exec(String(due || ''))
+      if (!match) return null
+      const month = Number(match[2])
+      const day = Number(match[3])
+      const target = new Date(Number(match[1]), month - 1, day)
+      const today = new Date()
+      today.setHours(0, 0, 0, 0)
+      const days = Math.round((target.getTime() - today.getTime()) / 86400000)
+      const text = days === 0 ? t('due.today') : days === 1 ? t('due.tomorrow') : `${month}/${day}`
+      const tone = days < 0 ? 'overdue' : days === 0 ? 'today' : days <= 2 ? 'soon' : 'later'
+      return { text, tone }
     }
 
     /**
@@ -627,6 +663,7 @@ window.__ModuleLoader__.load({
     function TodoRow(props) {
       const { item, t } = props
       const category = item.category === 'life' ? 'life' : 'work'
+      const due = dueChip(item.due, t)
       return h(
         'div',
         { className: `dsh-tf-row is-${category}${item.done ? ' is-done' : ''}` },
@@ -651,6 +688,7 @@ window.__ModuleLoader__.load({
             'div',
             { className: 'dsh-tf-text' },
             item.title,
+            due ? h('span', { className: `dsh-tf-due is-${due.tone}`, title: item.due }, due.text) : null,
           ),
         ),
         h(

@@ -16,6 +16,8 @@
 
 ## 安装
 
+![安装步骤](docs/install-guide.png)
+
 插件是纯 JavaScript，没有构建步骤。
 
 **桌面端 / Web（推荐）**：设置 → 插件 → 添加，粘贴

@@ -249,6 +249,61 @@ export function apply(ctx, rawConfig) {
     return ownVersion
   }
 
+  /** Where this package is installed, resolved once through the plugin manager. */
+  const install = { resolved: false, source: '', dir: '', repo: false, enabled: true, version: '' }
+
+  /** Read the installed bundle row (source, version) and whether a linked copy is a git checkout. */
+  async function detectInstall() {
+    if (install.resolved) return install
+    try {
+      const manager = ctx.get('pluginManager')
+      if (manager && typeof manager.listBundles === 'function') {
+        const bundles = await manager.listBundles()
+        const row = Array.isArray(bundles) ? bundles.find((entry) => entry && entry.name === 'dsh-todo-files') : null
+        if (row) {
+          install.source = row.source || (row.installTarget && row.installTarget.spec) || ''
+          install.enabled = row.enabled !== false
+          install.version = row.version || ''
+        }
+      }
+    } catch (error) {
+      warn('could not read the installed bundle row', error)
+    }
+    if (!install.version) install.version = await localVersion()
+    if (/^(link|file|path):/i.test(install.source)) {
+      install.dir = install.source.replace(/^(link|file|path):/i, '')
+      const gitHead = await fsp.stat(path.join(install.dir, '.git')).catch(() => null)
+      install.repo = Boolean(gitHead)
+    }
+    install.resolved = true
+    return install
+  }
+
+  /**
+   * Answer from the cache; start a background refresh when it is cold or stale, so a panel read
+   * never waits on a `git fetch`. The panel polls every six seconds and picks the result up.
+   */
+  function updateSnapshot() {
+    const fresh = updateCache.value && Date.now() - updateCache.at < UPDATE_TTL
+    if (!fresh && !updateCache.pending) {
+      updateCache.pending = true
+      detectInstall()
+        .then((found) => remoteVersion(found.repo ? found.dir : ''))
+        .catch(() => {})
+        .finally(() => {
+          updateCache.pending = false
+        })
+    }
+    const latest = updateCache.value || ''
+    const current = install.version || ownVersion || ''
+    return {
+      current,
+      latest,
+      available: Boolean(latest) && compareVersions(latest, current) > 0 && (!install.dir || install.repo),
+      pending: !latest,
+    }
+  }
+
   /** The version published on the repository's default branch, cached for a while. */
   async function remoteVersion(gitDir) {
     if (updateCache.value && Date.now() - updateCache.at < UPDATE_TTL) return updateCache
@@ -414,6 +469,7 @@ export function apply(ctx, rawConfig) {
       return {
         items: state.items.map((item) => ({ ...item })),
         trashCount: Array.isArray(state.trash) ? state.trash.length : 0,
+        update: updateSnapshot(),
       }
     },
 
@@ -590,55 +646,30 @@ export function apply(ctx, rawConfig) {
      * replace the working copy with a downloaded tarball.
      */
     async 'update.check'() {
-      const current = await localVersion()
-      let installedVersion = current
-      let source = ''
-      let enabled = true
-      try {
-        const manager = ctx.get('pluginManager')
-        if (manager && typeof manager.listBundles === 'function') {
-          const bundles = await manager.listBundles()
-          const row = Array.isArray(bundles) ? bundles.find((entry) => entry && entry.name === 'dsh-todo-files') : null
-          if (row) {
-            installedVersion = row.version || current
-            source = row.source || (row.installTarget && row.installTarget.spec) || ''
-            enabled = row.enabled !== false
-          }
-        }
-      } catch (error) {
-        warn('could not read the installed bundle row', error)
-      }
-      const linked = /^(link|file|path):/i.test(source)
-      const linkedDir = linked ? source.replace(/^(link|file|path):/i, '') : ''
-      let linkedRepo = false
-      if (linkedDir) {
-        const gitHead = await fsp.stat(path.join(linkedDir, '.git')).catch(() => null)
-        linkedRepo = Boolean(gitHead)
-      }
-      const remote = await remoteVersion(linkedRepo ? linkedDir : '')
-      const latest = remote.value || ''
+      const install = await detectInstall()
+      const latest = (await remoteVersion(install.repo ? install.dir : '')).value || ''
       return {
-        current: installedVersion,
+        current: install.version,
         latest,
-        source,
-        linked,
-        linkedRepo,
-        enabled,
-        available: Boolean(latest) && compareVersions(latest, installedVersion) > 0 && (!linked || linkedRepo),
-        error: remote.value ? '' : remote.error,
+        source: install.source,
+        linked: Boolean(install.dir),
+        linkedRepo: install.repo,
+        enabled: install.enabled,
+        available: Boolean(latest) && compareVersions(latest, install.version) > 0 && (!install.dir || install.repo),
+        error: latest ? '' : updateCache.error,
       }
     },
 
     /** Install the published version over the current one (a git checkout is pulled instead). */
     async 'update.apply'() {
-      const state = await ops['update.check']()
-      if (state.linked && state.linkedRepo) {
-        const dir = state.source.replace(/^(link|file|path):/i, '')
-        const result = await runGit(dir, ['pull', '--ff-only'])
+      const install = await detectInstall()
+      if (install.repo && install.dir) {
+        const result = await runGit(install.dir, ['pull', '--ff-only'])
         if (result.code !== 0) throw fail(`拉取失败：${String(result.output || 'git 拒绝了这次更新').slice(-400)}`, 409)
         ownVersion = ''
+        install.version = await localVersion()
         updateCache.at = 0
-        return { application: 'restart-required', version: state.latest, warnings: [], via: 'git-pull' }
+        return { application: 'restart-required', version: install.version, warnings: [], via: 'git-pull' }
       }
       const manager = ctx.get('pluginManager')
       if (!manager || typeof manager.installBundle !== 'function') throw fail('这个版本的 DSH 不支持插件自更新', 501)
@@ -924,6 +955,12 @@ export function apply(ctx, rawConfig) {
     const server = typeof ctx.get === 'function' ? ctx.get('webServer') : undefined
     if (server) ctx.effect(() => server.register(route))
   }
+
+  // Warm the update check once at startup, so the panel learns about a new version on first open
+  // instead of waiting for the fetch after the user has already looked at the header.
+  detectInstall()
+    .then((found) => remoteVersion(found.repo ? found.dir : ''))
+    .catch(() => {})
 
   // ---------------------------------------------------------------- tool
 

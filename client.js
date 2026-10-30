@@ -123,6 +123,7 @@ window.__ModuleLoader__.load({
 }
 .dsh-tf-head { display: flex; align-items: flex-end; justify-content: space-between; gap: 16px; padding: 18px 22px 12px; flex: none; }
 .dsh-tf-headline { display: flex; flex-direction: column; gap: 3px; min-width: 0; }
+.dsh-tf-titlerow { display: flex; align-items: center; gap: 8px; min-width: 0; }
 .dsh-tf-title { margin: 0; font-size: 20px; font-weight: 600; letter-spacing: .2px; line-height: 1.3; }
 .dsh-tf-sub { font-size: 14px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dsh-tf-body { flex: 1; min-height: 0; overflow: auto; padding: 0 22px 20px; }
@@ -239,10 +240,9 @@ window.__ModuleLoader__.load({
 .dsh-tf-trashbtn:hover { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); }
 .dsh-tf-trashbtn.is-on { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent); }
 .dsh-tf-trashbtn-count { font-variant-numeric: tabular-nums; font-weight: 600; }
-.dsh-tf-updatebtn { display: inline-flex; align-items: center; gap: 8px; height: 26px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-tf-work); background: color-mix(in srgb, var(--dsw-tf-work) 10%, transparent); color: var(--dsw-tf-work); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
-.dsh-tf-updatebtn:hover { background: color-mix(in srgb, var(--dsw-tf-work) 18%, transparent); }
+.dsh-tf-updatebtn { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--dsw-tf-work); background: transparent; color: var(--dsw-tf-work); font: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer; transition: background .15s ease; }
+.dsh-tf-updatebtn:hover { background: color-mix(in srgb, var(--dsw-tf-work) 12%, transparent); }
 .dsh-tf-updatebtn:disabled { opacity: .7; cursor: default; }
-.dsh-tf-updatebtn-act { padding-left: 8px; border-left: 1px solid color-mix(in srgb, var(--dsw-tf-work) 35%, transparent); }
 .dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-toolbar .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
 .dsh-tf-toolbar .dsh-tf-search:focus { border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-base); }
@@ -918,6 +918,7 @@ window.__ModuleLoader__.load({
           const value = await call('todos.list', {})
           setItems(Array.isArray(value.items) ? value.items : [])
           setTrashCount(Number(value.trashCount) || 0)
+          if (value.update) setUpdateInfo(value.update)
           setError('')
         } catch (failure) {
           if (!silent) setError(messageOf(failure))
@@ -1437,7 +1438,44 @@ window.__ModuleLoader__.load({
             h(
               'div',
               { className: 'dsh-tf-headline' },
-              h('h1', { className: 'dsh-tf-title' }, t('panel.title')),
+              h(
+                'div',
+                { className: 'dsh-tf-titlerow' },
+                h('h1', { className: 'dsh-tf-title' }, t('panel.title')),
+                updateInfo && updateInfo.available
+                  ? h(
+                      'button',
+                      {
+                        type: 'button',
+                        className: 'dsh-tf-updatebtn',
+                        title: `当前 v${updateInfo.current} → v${updateInfo.latest}，点一下更新`,
+                        'aria-label': `有新版 v${updateInfo.latest}，点击更新`,
+                        onClick: applyUpdate,
+                        disabled: updating,
+                      },
+                      updating
+                        ? null
+                        : h(
+                            'svg',
+                            {
+                              width: 12,
+                              height: 12,
+                              viewBox: '0 0 16 16',
+                              fill: 'none',
+                              stroke: 'currentColor',
+                              'stroke-width': 1.7,
+                              'stroke-linecap': 'round',
+                              'stroke-linejoin': 'round',
+                              'aria-hidden': 'true',
+                            },
+                            h('path', { d: 'M8 2.5v7.5' }),
+                            h('path', { d: 'M4.8 7.2 8 10.4l3.2-3.2' }),
+                            h('path', { d: 'M3.2 13.4h9.6' }),
+                          ),
+                      updating ? '更新中…' : '新版本',
+                    )
+                  : null,
+              ),
               (() => {
                 const overdue = items.filter((item) => !item.done && item.due && item.due < todayKey).length
                 const today = items.filter((item) => !item.done && item.due === todayKey).length
@@ -1447,21 +1485,6 @@ window.__ModuleLoader__.load({
                 return h('span', { className: 'dsh-tf-sub' }, parts.join(' · '))
               })(),
             ),
-            updateInfo && updateInfo.available
-              ? h(
-                  'button',
-                  {
-                    type: 'button',
-                    className: 'dsh-tf-updatebtn',
-                    title: `当前 v${updateInfo.current} → v${updateInfo.latest}`,
-                    'aria-label': `有新版 v${updateInfo.latest}，点击更新`,
-                    onClick: applyUpdate,
-                    disabled: updating,
-                  },
-                  updating ? '更新中…' : `新版 v${updateInfo.latest}`,
-                  updating ? null : h('span', { className: 'dsh-tf-updatebtn-act' }, '更新'),
-                )
-              : null,
             trashCount > 0
               ? h(
                   'button',

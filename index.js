@@ -79,7 +79,49 @@ export function apply(ctx, rawConfig) {
     if (origin) item.origin = origin
     const due = normalizeDue(raw.due)
     if (due) item.due = due
+    const recurring = normalizeRecurring(raw.recurring)
+    if (recurring) item.recurring = recurring
     return item
+  }
+
+  /**
+   * Coerce a repeat rule: which unit and how many of them.
+   * @param raw - `{ freq, interval? }`.
+   * @returns `{ freq, interval }`, or null.
+   */
+  function normalizeRecurring(raw) {
+    const source = typeof raw === 'string' ? { freq: raw } : raw && typeof raw === 'object' ? raw : null
+    if (!source) return null
+    const freq = ['daily', 'weekly', 'monthly'].includes(source.freq) ? source.freq : ''
+    if (!freq) return null
+    return { freq, interval: Math.max(1, Math.min(12, Number(source.interval) || 1)) }
+  }
+
+  /**
+   * The next due date after one repeat step, always in the future.
+   * @param due - current due date, may be empty.
+   * @param recurring - the rule.
+   */
+  function advanceDue(due, recurring) {
+    const pad = (value) => String(value).padStart(2, '0')
+    const valid = /^\d{4}-\d{2}-\d{2}$/.test(String(due || ''))
+    const base = valid ? new Date(`${due}T00:00:00`) : new Date()
+    base.setHours(0, 0, 0, 0)
+    const today = new Date()
+    today.setHours(0, 0, 0, 0)
+    const step = recurring.interval || 1
+    const stepOnce = () => {
+      if (recurring.freq === 'daily') base.setDate(base.getDate() + step)
+      else if (recurring.freq === 'weekly') base.setDate(base.getDate() + 7 * step)
+      else base.setMonth(base.getMonth() + step)
+    }
+    stepOnce()
+    let guard = 0
+    while (base.getTime() <= today.getTime() && guard < 60) {
+      stepOnce()
+      guard += 1
+    }
+    return `${base.getFullYear()}-${pad(base.getMonth() + 1)}-${pad(base.getDate())}`
   }
 
   /**
@@ -283,6 +325,7 @@ export function apply(ctx, rawConfig) {
       const origin = normalizeOrigin(payload && payload.origin)
       const category = normalizeCategory(payload && payload.category)
       const due = normalizeDue(payload && payload.due)
+      const recurring = normalizeRecurring(payload && payload.recurring)
       return enqueue(async () => {
         await loadState()
         const now = Date.now()
@@ -290,6 +333,7 @@ export function apply(ctx, rawConfig) {
         if (link) item.link = link
         if (origin) item.origin = origin
         if (due) item.due = due
+        if (recurring) item.recurring = recurring
         state.items = sortItems([...state.items, item])
         await persist()
         return { item: { ...item } }
@@ -312,12 +356,27 @@ export function apply(ctx, rawConfig) {
           if (!title) throw fail('待办内容不能为空')
           item.title = title.slice(0, 800)
         }
-        if (typeof patch.done === 'boolean') item.done = patch.done
+        if (typeof patch.done === 'boolean') {
+          const wasDone = item.done
+          item.done = patch.done
+          // Completing a repeating todo spawns the next occurrence instead of losing the habit.
+          if (!wasDone && item.done && item.recurring) {
+            const now = Date.now()
+            const next = { ...item, id: randomUUID(), done: false, createdAt: now, updatedAt: now }
+            next.due = advanceDue(item.due, item.recurring)
+            state.items.push(next)
+          }
+        }
         if (typeof patch.category === 'string') item.category = normalizeCategory(patch.category)
         if (Object.prototype.hasOwnProperty.call(patch, 'due')) {
           const due = normalizeDue(patch.due)
           if (due) item.due = due
           else delete item.due
+        }
+        if (Object.prototype.hasOwnProperty.call(patch, 'recurring')) {
+          const recurring = normalizeRecurring(patch.recurring)
+          if (recurring) item.recurring = recurring
+          else delete item.recurring
         }
         if (Object.prototype.hasOwnProperty.call(patch, 'origin')) {
           const origin = normalizeOrigin(patch.origin)
@@ -723,6 +782,12 @@ export function apply(ctx, rawConfig) {
           description:
             'Deadline as YYYY-MM-DD (empty string clears it). Pass the day here instead of writing it inside the title — the panel renders it as a dated label.',
         },
+        recurring: {
+          type: 'string',
+          enum: ['', 'daily', 'weekly', 'monthly'],
+          description:
+            'Repeat rule for habits: daily / weekly / monthly (empty string clears it). Completing the todo then creates the next occurrence automatically.',
+        },
       },
     },
     output: {
@@ -772,6 +837,7 @@ export function apply(ctx, rawConfig) {
           category: input.category === 'life' ? 'life' : 'work',
           origin,
           due: typeof input.due === 'string' ? input.due : undefined,
+          recurring: typeof input.recurring === 'string' ? input.recurring : undefined,
           link: typeof input.path === 'string' && input.path.trim()
             ? { path: input.path.trim(), kind: input.kind === 'dir' ? 'dir' : 'file' }
             : undefined,
@@ -784,6 +850,7 @@ export function apply(ctx, rawConfig) {
         if (typeof input.done === 'boolean') patch.done = input.done
         if (input.category === 'work' || input.category === 'life') patch.category = input.category
         if (typeof input.due === 'string') patch.due = input.due
+        if (typeof input.recurring === 'string') patch.recurring = input.recurring
         if (typeof input.path === 'string') {
           patch.link = input.path.trim()
             ? { path: input.path.trim(), kind: input.kind === 'dir' ? 'dir' : 'file' }

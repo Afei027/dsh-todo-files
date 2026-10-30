@@ -214,6 +214,7 @@ window.__ModuleLoader__.load({
 .dsh-tf-edit { width: 100%; min-width: 0; height: 28px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--dsw-tf-work); background: var(--dsw-alias-bg-base); color: inherit; font: inherit; font-size: 15px; outline: none; }
 .dsh-tf-dateinput { margin-left: 8px; height: 26px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 12px; }
 .dsh-tf-adddue { margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: .5; }
+.dsh-tf-rec { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: #8b5cf6; border: 1px solid rgba(139,92,246,.45); background: rgba(139,92,246,.1); }
 .dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
@@ -724,6 +725,20 @@ window.__ModuleLoader__.load({
                 'div',
                 { className: 'dsh-tf-text', onDoubleClick: () => props.onStartEdit(item), title: '双击改标题' },
                 item.title,
+                item.recurring
+                  ? h(
+                      'span',
+                      {
+                        className: 'dsh-tf-rec',
+                        title: '点一下换重复规则',
+                        onClick: (event) => {
+                          event.stopPropagation()
+                          props.onCycleRecurring(item)
+                        },
+                      },
+                      item.recurring.freq === 'daily' ? '每天' : item.recurring.freq === 'weekly' ? '每周' : '每月',
+                    )
+                  : null,
                 props.dueEditing
                   ? h('input', {
                       type: 'date',
@@ -971,6 +986,20 @@ window.__ModuleLoader__.load({
         }
       }
 
+      /** Cycle a todo through no-repeat → daily → weekly → monthly. */
+      const cycleRecurring = async (item) => {
+        const order = [null, { freq: 'daily' }, { freq: 'weekly' }, { freq: 'monthly' }]
+        const current = item.recurring ? item.recurring.freq : ''
+        const index = order.findIndex((entry) => (entry ? entry.freq : '') === current)
+        const next = order[(index + 1) % order.length]
+        try {
+          await call('todos.update', { id: item.id, patch: { recurring: next } })
+          await loadTodos(true)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
       const fileInput = useRef(null)
       const [showTrash, setShowTrash] = useState(false)
       const [trashItems, setTrashItems] = useState([])
@@ -1162,6 +1191,7 @@ window.__ModuleLoader__.load({
           onCancelEdit: () => setEditingId(''),
           onStartDue: (entry) => setDueEditingId(entry.id),
           onSaveDue: saveDue,
+          onCycleRecurring: cycleRecurring,
           onPortal: openPortalFor,
           onOpenConversation: openConversationFor,
         })

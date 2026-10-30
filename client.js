@@ -208,9 +208,6 @@ window.__ModuleLoader__.load({
 .dsh-tf-due.is-soon { color: var(--dsh-tf-work); border-color: color-mix(in srgb, var(--dsh-tf-work) 38%, transparent); background: color-mix(in srgb, var(--dsh-tf-work) 9%, transparent); }
 .dsh-tf-due.is-today { color: #a45a00; border-color: color-mix(in srgb, #d97706 45%, transparent); background: color-mix(in srgb, #d97706 12%, transparent); }
 .dsh-tf-due.is-overdue { color: var(--dsw-alias-state-error-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, transparent); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent); }
-.dsh-tf-quick { display: flex; gap: 8px; margin-bottom: 10px; }
-.dsh-tf-quickinput { flex: 1; min-width: 0; height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: inherit; font: inherit; font-size: 14px; outline: none; }
-.dsh-tf-quickinput:focus { border-color: var(--dsw-tf-work); }
 .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: inherit; font: inherit; font-size: 13px; outline: none; }
 .dsh-tf-quickfilter { height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 13px; cursor: pointer; }
 .dsh-tf-quickfilter.is-on { border-color: var(--dsw-tf-work); color: var(--dsw-tf-work); background: color-mix(in srgb, var(--dsw-tf-work) 12%, transparent); }
@@ -224,24 +221,17 @@ window.__ModuleLoader__.load({
 .dsh-tf-child { padding-left: 26px; }
 .dsh-tf-child .dsh-tf-row { font-size: 14px; }
 .dsh-tf-childadd { padding: 2px 0 4px 26px; }
-.dsh-tf-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
-.dsh-tf-toolbar .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid transparent; background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
+.dsh-tf-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.dsh-tf-searchbtn { flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 14px; line-height: 1; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.dsh-tf-toolbar .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
 .dsh-tf-toolbar .dsh-tf-search:focus { border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-base); }
-.dsh-tf-seg { display: inline-flex; align-items: center; gap: 1px; padding: 2px; border-radius: 9px; background: var(--dsw-alias-bg-layer-2); flex: none; }
-.dsh-tf-seg .dsh-tf-filter { height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--dsw-alias-label-secondary); cursor: pointer; transition: background .15s ease, color .15s ease; }
-.dsh-tf-seg .dsh-tf-filter.is-active { background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 2px rgba(15,23,42,.10); }
-.dsh-tf-seg .dsh-tf-filter.is-active[data-scope="work"] { color: var(--dsw-tf-work); }
-.dsh-tf-seg .dsh-tf-filter.is-active[data-scope="life"] { color: var(--dsw-tf-life); }
 .dsh-tf-chip { height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s ease, color .15s ease; }
 .dsh-tf-chip:hover { color: var(--dsw-alias-label-primary); }
 .dsh-tf-chip.is-on { background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); }
-.dsh-tf-seg .dsh-tf-filter-count { margin-left: 4px; opacity: .6; font-weight: 500; }
 .dsh-tf-row { border-radius: 8px; transition: background .15s ease; }
 .dsh-tf-row:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent); }
 .dsh-tf-row:active { transform: translateY(1px); }
-.dsh-tf-quick { display: flex; gap: 6px; margin-bottom: 10px; }
-.dsh-tf-quick .dsh-tf-quickinput { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px dashed var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
-.dsh-tf-quick .dsh-tf-quickinput:focus { border-style: solid; border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-layer-1); }
 .dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
@@ -931,6 +921,7 @@ window.__ModuleLoader__.load({
       const [dueEditingId, setDueEditingId] = useState('')
       const [undoItem, setUndoItem] = useState(null)
       const [tagFilter, setTagFilter] = useState('')
+      const [searchOpen, setSearchOpen] = useState(false)
       const [childFor, setChildFor] = useState('')
       const [childText, setChildText] = useState('')
       const undoTimer = useRef(null)
@@ -1074,7 +1065,7 @@ window.__ModuleLoader__.load({
       const quickInputRef = useRef(null)
       const searchRef = useRef(null)
 
-      // n focuses the quick-add box, / focuses search; both stay out of the way while typing.
+      // "/" opens search; the box stays hidden until asked for, since searching is rare here.
       useEffect(() => {
         const onKey = (event) => {
           if (event.ctrlKey || event.metaKey || event.altKey) return
@@ -1082,12 +1073,9 @@ window.__ModuleLoader__.load({
           const typing =
             target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
           if (typing) return
-          if (event.key === 'n' || event.key === 'N') {
+          if (event.key === '/') {
             event.preventDefault()
-            if (quickInputRef.current) quickInputRef.current.focus()
-          } else if (event.key === '/') {
-            event.preventDefault()
-            if (searchRef.current) searchRef.current.focus()
+            setSearchOpen(true)
           }
         }
         window.addEventListener('keydown', onKey)
@@ -1314,25 +1302,11 @@ window.__ModuleLoader__.load({
           h(
             'div',
             { className: 'dsh-tf-datarow' },
-            h('button', { type: 'button', className: 'dsh-tf-linkbtn', onClick: exportTodos }, '导出 JSON'),
-            h(
-              'button',
-              { type: 'button', className: 'dsh-tf-linkbtn', onClick: () => fileInput.current && fileInput.current.click() },
-              '导入',
-            ),
             h(
               'button',
               { type: 'button', className: 'dsh-tf-linkbtn', onClick: toggleTrash },
               showTrash ? '关闭回收站' : '回收站',
             ),
-            h('input', {
-              type: 'file',
-              accept: '.json,application/json',
-              ref: fileInput,
-              style: { display: 'none' },
-              onChange: importFile,
-            }),
-            h('span', { className: 'dsh-tf-datarow-hint' }, ''),
           ),
           h(
             'div',
@@ -1415,41 +1389,52 @@ window.__ModuleLoader__.load({
               h(
                 'div',
                 { className: 'dsh-tf-toolbar' },
-                h('input', {
-                  className: 'dsh-tf-search',
-                  ref: searchRef,
-                  value: query,
-                  placeholder: t('search.placeholder'),
-                  onChange: (event) => setQuery(event.target.value),
-                }),
                 h(
                   'div',
-                  { className: 'dsh-tf-seg', role: 'group', 'aria-label': t('panel.title') },
+                  { className: 'dsh-tf-filters', role: 'group', 'aria-label': t('panel.title') },
                   scopeButton('all', '全部', scopeCounts.all),
                   scopeButton('work', '办公', scopeCounts.work),
                   scopeButton('life', '生活', scopeCounts.life),
                 ),
                 h(
-                  'div',
-                  { className: 'dsh-tf-seg is-quiet' },
-                  h('button', { type: 'button', className: `dsh-tf-chip${quick === 'today' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'today' ? 'all' : 'today') }, '今天'),
-                  h('button', { type: 'button', className: `dsh-tf-chip${quick === 'overdue' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue') }, '逾期'),
+                  'button',
+                  { type: 'button', className: `dsh-tf-chip${quick === 'today' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'today' ? 'all' : 'today') },
+                  '今天',
                 ),
-              ),
-              h(
-                'div',
-                { className: 'dsh-tf-quick' },
-                h('input', {
-                  className: 'dsh-tf-quickinput',
-                  ref: quickInputRef,
-                  value: quickText,
-                  placeholder: t('quick.placeholder'),
-                  onChange: (event) => setQuickText(event.target.value),
-                  onKeyDown: (event) => {
-                    if (event.key === 'Enter') quickAdd()
-                  },
-                }),
-                h('button', { type: 'button', className: 'dsh-tf-btn is-solid', onClick: quickAdd }, t('quick.add')),
+                h(
+                  'button',
+                  { type: 'button', className: `dsh-tf-chip${quick === 'overdue' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue') },
+                  '逾期',
+                ),
+                searchOpen
+                  ? h('input', {
+                      className: 'dsh-tf-search',
+                      ref: searchRef,
+                      autoFocus: true,
+                      value: query,
+                      placeholder: t('search.placeholder'),
+                      onChange: (event) => setQuery(event.target.value),
+                      onKeyDown: (event) => {
+                        if (event.key === 'Escape') {
+                          setQuery('')
+                          setSearchOpen(false)
+                        }
+                      },
+                      onBlur: () => {
+                        if (!query.trim()) setSearchOpen(false)
+                      },
+                    })
+                  : h(
+                      'button',
+                      {
+                        type: 'button',
+                        className: 'dsh-tf-searchbtn',
+                        title: '搜索（/）',
+                        'aria-label': '搜索',
+                        onClick: () => setSearchOpen(true),
+                      },
+                      '🔍',
+                    ),
               ),
               (() => {
                 const tags = [...new Set(items.flatMap((item) => item.tags || []))].slice(0, 14)

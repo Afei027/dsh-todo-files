@@ -215,6 +215,8 @@ window.__ModuleLoader__.load({
 .dsh-tf-dateinput { margin-left: 8px; height: 26px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 12px; }
 .dsh-tf-adddue { margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: .5; }
 .dsh-tf-rec { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: #8b5cf6; border: 1px solid rgba(139,92,246,.45); background: rgba(139,92,246,.1); }
+.dsh-tf-stats { display: flex; align-items: center; gap: 10px; padding: 0 2px 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
+.dsh-tf-stats-hint { margin-left: auto; opacity: .65; }
 .dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
@@ -1001,6 +1003,28 @@ window.__ModuleLoader__.load({
       }
 
       const fileInput = useRef(null)
+      const quickInputRef = useRef(null)
+      const searchRef = useRef(null)
+
+      // n focuses the quick-add box, / focuses search; both stay out of the way while typing.
+      useEffect(() => {
+        const onKey = (event) => {
+          if (event.ctrlKey || event.metaKey || event.altKey) return
+          const target = event.target
+          const typing =
+            target && (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable)
+          if (typing) return
+          if (event.key === 'n' || event.key === 'N') {
+            event.preventDefault()
+            if (quickInputRef.current) quickInputRef.current.focus()
+          } else if (event.key === '/') {
+            event.preventDefault()
+            if (searchRef.current) searchRef.current.focus()
+          }
+        }
+        window.addEventListener('keydown', onKey)
+        return () => window.removeEventListener('keydown', onKey)
+      }, [])
       const [showTrash, setShowTrash] = useState(false)
       const [trashItems, setTrashItems] = useState([])
 
@@ -1310,9 +1334,21 @@ window.__ModuleLoader__.load({
               { className: 'dsh-tf-pane' },
               h(
                 'div',
+                { className: 'dsh-tf-stats' },
+                [
+                  `共 ${items.length}`,
+                  `完成 ${items.filter((item) => item.done).length}`,
+                  `逾期 ${items.filter((item) => !item.done && item.due && item.due < todayKey).length}`,
+                  `今天 ${items.filter((item) => !item.done && item.due === todayKey).length}`,
+                ].join(' · '),
+                h('span', { className: 'dsh-tf-stats-hint' }, 'n 新建 · / 搜索'),
+              ),
+              h(
+                'div',
                 { className: 'dsh-tf-quick' },
                 h('input', {
                   className: 'dsh-tf-quickinput',
+                  ref: quickInputRef,
                   value: quickText,
                   placeholder: t('quick.placeholder'),
                   onChange: (event) => setQuickText(event.target.value),
@@ -1327,6 +1363,7 @@ window.__ModuleLoader__.load({
                 { className: 'dsh-tf-tools' },
                 h('input', {
                   className: 'dsh-tf-search',
+                  ref: searchRef,
                   value: query,
                   placeholder: t('search.placeholder'),
                   onChange: (event) => setQuery(event.target.value),

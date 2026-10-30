@@ -164,6 +164,11 @@ window.__ModuleLoader__.load({
   --tf-fill: var(--dsw-alias-state-success-primary);
   --tf-on: #fff;
 }
+.dsh-tf-filter[data-scope="quick"] {
+  --tf-line: var(--dsw-alias-label-secondary);
+  --tf-fill: var(--dsw-alias-label-primary);
+  --tf-on: var(--dsw-alias-bg-base);
+}
 .dsh-tf-filter:hover { background: color-mix(in srgb, var(--tf-line) 12%, transparent); }
 .dsh-tf-filter.is-active {
   background: var(--tf-fill);
@@ -233,9 +238,6 @@ window.__ModuleLoader__.load({
 .dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-toolbar .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
 .dsh-tf-toolbar .dsh-tf-search:focus { border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-base); }
-.dsh-tf-chip { height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s ease, color .15s ease; }
-.dsh-tf-chip:hover { color: var(--dsw-alias-label-primary); }
-.dsh-tf-chip.is-on { background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); }
 .dsh-tf-row { border-radius: 8px; transition: background .15s ease; }
 .dsh-tf-row:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent); }
 .dsh-tf-row:active { transform: translateY(1px); }
@@ -1415,12 +1417,12 @@ window.__ModuleLoader__.load({
                   { className: 'dsh-tf-group' },
                   h(
                     'button',
-                    { type: 'button', className: `dsh-tf-chip${quick === 'today' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'today' ? 'all' : 'today') },
+                    { type: 'button', className: `dsh-tf-filter${quick === 'today' ? ' is-active' : ''}`, 'data-scope': 'quick', onClick: () => setQuick(quick === 'today' ? 'all' : 'today') },
                     '今天',
                   ),
                   h(
                     'button',
-                    { type: 'button', className: `dsh-tf-chip${quick === 'overdue' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue') },
+                    { type: 'button', className: `dsh-tf-filter${quick === 'overdue' ? ' is-active' : ''}`, 'data-scope': 'quick', onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue') },
                     '逾期',
                   ),
                 ),

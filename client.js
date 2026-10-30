@@ -218,8 +218,11 @@ window.__ModuleLoader__.load({
 .dsh-tf-quickfilter { height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 13px; cursor: pointer; }
 .dsh-tf-quickfilter.is-on { border-color: var(--dsw-tf-work); color: var(--dsw-tf-work); background: color-mix(in srgb, var(--dsw-tf-work) 12%, transparent); }
 .dsh-tf-edit { width: 100%; min-width: 0; height: 28px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--dsw-tf-work); background: var(--dsw-alias-bg-base); color: inherit; font: inherit; font-size: 15px; outline: none; }
-.dsh-tf-dateinput { margin-left: 8px; height: 26px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 12px; }
-.dsh-tf-adddue { margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: .5; }
+.dsh-tf-dateinput { height: 26px; padding: 0 6px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); color: inherit; font: inherit; font-size: 12px; }
+.dsh-tf-duepop { display: flex; align-items: center; gap: 4px; margin-top: 4px; padding: 4px; border-radius: 8px; background: var(--dsw-alias-bg-layer-2); }
+.dsh-tf-quickset { height: 24px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); font: inherit; font-size: 12px; cursor: pointer; }
+.dsh-tf-quickset:hover { border-color: var(--dsw-tf-work); color: var(--dsw-tf-work); }
+.dsh-tf-quickset.is-quiet { border-color: transparent; background: transparent; color: var(--dsw-alias-label-secondary); }
 .dsh-tf-rec { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: #8b5cf6; border: 1px solid rgba(139,92,246,.45); background: rgba(139,92,246,.1); }
 .dsh-tf-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); }
 .dsh-tf-tag:hover { color: var(--dsw-tf-work); border-color: var(--dsw-tf-work); }
@@ -242,7 +245,6 @@ window.__ModuleLoader__.load({
 .dsh-tf-row { border-radius: 8px; transition: background .15s ease; }
 .dsh-tf-row:hover { background: color-mix(in srgb, var(--dsw-alias-label-primary) 5%, transparent); }
 .dsh-tf-row:active { transform: translateY(1px); }
-.dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
 .dsh-tf-datarow-hint { flex: 1; min-width: 0; font-size: 12px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -781,21 +783,45 @@ window.__ModuleLoader__.load({
                   ),
                 ),
                 props.dueEditing
-                  ? h('input', {
-                      type: 'date',
-                      className: 'dsh-tf-dateinput',
-                      defaultValue: item.due || '',
-                      onChange: (event) => props.onSaveDue(item, event.target.value),
-                      onBlur: () => props.onSaveDue(item, item.due || ''),
-                    })
+                  ? h(
+                      'div',
+                      { className: 'dsh-tf-duepop' },
+                      h('button', { type: 'button', className: 'dsh-tf-quickset', onClick: () => props.onQuickDue(item, 0) }, '今天'),
+                      h('button', { type: 'button', className: 'dsh-tf-quickset', onClick: () => props.onQuickDue(item, 1) }, '明天'),
+                      h('button', { type: 'button', className: 'dsh-tf-quickset', onClick: () => props.onQuickDue(item, 7) }, '一周后'),
+                      h('input', {
+                        type: 'date',
+                        className: 'dsh-tf-dateinput',
+                        autoFocus: true,
+                        defaultValue: item.due || '',
+                        onChange: (event) => props.onSaveDue(item, event.target.value),
+                      }),
+                      item.due
+                        ? h('button', { type: 'button', className: 'dsh-tf-quickset is-quiet', onClick: () => props.onSaveDue(item, '') }, '清除')
+                        : null,
+                      h('button', { type: 'button', className: 'dsh-tf-quickset is-quiet', onClick: () => props.onCancelDue() }, '取消'),
+                    )
                   : due
                     ? h('span', { className: `dsh-tf-due is-${due.tone}`, title: '点一下改日期', onClick: () => props.onStartDue(item) }, due.text)
-                    : h('span', { className: 'dsh-tf-adddue', onClick: () => props.onStartDue(item) }, '+日期'),
+                    : null,
               ),
         ),
         h(
           'div',
           { className: 'dsh-tf-actions' },
+          item.due
+            ? null
+            : h(
+                'button',
+                {
+                  type: 'button',
+                  className: 'dsh-tf-icon-btn',
+                  title: '设置截止日期',
+                  'aria-label': '设置截止日期',
+                  onClick: () => props.onStartDue(item),
+                },
+                h('span', { className: 'dsh-tf-emoji', 'aria-hidden': true }, '📅'),
+              ),
           h(
             'button',
             {
@@ -1018,6 +1044,15 @@ window.__ModuleLoader__.load({
         } catch (failure) {
           setError(messageOf(failure))
         }
+      }
+
+      /** Set a due date relative to today, in one click. */
+      const quickSetDue = (item, offset) => {
+        const date = new Date()
+        date.setHours(0, 0, 0, 0)
+        date.setDate(date.getDate() + Number(offset))
+        const pad = (value) => String(value).padStart(2, '0')
+        saveDue(item, `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())}`)
       }
 
       /** Hide at once, delete for real after five seconds unless undone. */
@@ -1283,6 +1318,8 @@ window.__ModuleLoader__.load({
           onCancelEdit: () => setEditingId(''),
           onStartDue: (entry) => setDueEditingId(entry.id),
           onSaveDue: saveDue,
+          onQuickDue: quickSetDue,
+          onCancelDue: () => setDueEditingId(''),
           onCycleRecurring: cycleRecurring,
           onTagClick: (tag) => setTagFilter((current) => (current === tag ? '' : tag)),
           onAddChild: (entry) => {

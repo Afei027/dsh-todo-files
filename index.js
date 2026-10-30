@@ -250,8 +250,27 @@ export function apply(ctx, rawConfig) {
   }
 
   /** The version published on the repository's default branch, cached for a while. */
-  async function remoteVersion() {
+  async function remoteVersion(gitDir) {
     if (updateCache.value && Date.now() - updateCache.at < UPDATE_TTL) return updateCache
+    // A local checkout can ask git, which is the same transport an update would use and is
+    // reachable where raw.githubusercontent.com is not.
+    if (gitDir) {
+      const fetched = await runGit(gitDir, ['fetch', '--quiet', 'origin', 'main'])
+      if (fetched.code === 0) {
+        const shown = await runGit(gitDir, ['show', 'origin/main:package.json'])
+        if (shown.code === 0) {
+          try {
+            const parsed = JSON.parse(shown.output)
+            updateCache.at = Date.now()
+            updateCache.value = String(parsed.version || '')
+            updateCache.error = ''
+            return updateCache
+          } catch {
+            // fall through to the HTTP route
+          }
+        }
+      }
+    }
     try {
       const response = await fetch(REPO_RAW, { signal: AbortSignal.timeout(10000) })
       if (!response.ok) throw new Error(`HTTP ${response.status}`)
@@ -572,7 +591,6 @@ export function apply(ctx, rawConfig) {
      */
     async 'update.check'() {
       const current = await localVersion()
-      const remote = await remoteVersion()
       let installedVersion = current
       let source = ''
       let enabled = true
@@ -597,6 +615,7 @@ export function apply(ctx, rawConfig) {
         const gitHead = await fsp.stat(path.join(linkedDir, '.git')).catch(() => null)
         linkedRepo = Boolean(gitHead)
       }
+      const remote = await remoteVersion(linkedRepo ? linkedDir : '')
       const latest = remote.value || ''
       return {
         current: installedVersion,

@@ -83,6 +83,8 @@ export function apply(ctx, rawConfig) {
     if (recurring) item.recurring = recurring
     const tags = normalizeTags(raw.tags)
     if (tags) item.tags = tags
+    const parentId = typeof raw.parentId === 'string' && raw.parentId ? raw.parentId : ''
+    if (parentId) item.parentId = parentId
     return item
   }
 
@@ -339,10 +341,13 @@ export function apply(ctx, rawConfig) {
       const due = normalizeDue(payload && payload.due)
       const recurring = normalizeRecurring(payload && payload.recurring)
       const tags = normalizeTags(payload && payload.tags)
+      const parentId = typeof (payload && payload.parentId) === 'string' ? payload.parentId : ''
       return enqueue(async () => {
         await loadState()
         const now = Date.now()
         const item = { id: randomUUID(), title: title.slice(0, 800), done: false, category, createdAt: now, updatedAt: now }
+        if (parentId && !state.items.some((entry) => entry.id === parentId)) throw fail('父任务已经不在了', 404)
+        if (parentId) item.parentId = parentId
         if (link) item.link = link
         if (origin) item.origin = origin
         if (due) item.due = due
@@ -397,6 +402,11 @@ export function apply(ctx, rawConfig) {
           if (tags) item.tags = tags
           else delete item.tags
         }
+        if (Object.prototype.hasOwnProperty.call(patch, 'parentId')) {
+          const parentId = typeof patch.parentId === 'string' ? patch.parentId : ''
+          if (parentId && parentId !== item.id && state.items.some((entry) => entry.id === parentId)) item.parentId = parentId
+          else delete item.parentId
+        }
         if (Object.prototype.hasOwnProperty.call(patch, 'origin')) {
           const origin = normalizeOrigin(patch.origin)
           if (origin) item.origin = origin
@@ -427,10 +437,19 @@ export function apply(ctx, rawConfig) {
         await loadState()
         const item = state.items.find((entry) => entry.id === id)
         if (!item) throw fail('这条待办已经不在了', 404)
-        state.items = state.items.filter((entry) => entry.id !== id)
-        state.trash = [{ ...item, deletedAt: Date.now() }, ...(state.trash || [])].slice(0, 200)
+        // A parent takes its subtasks with it, so the tree never loses its root.
+        const doomed = new Set()
+        const collect = (target) => {
+          doomed.add(target)
+          for (const child of state.items) if (child.parentId === target) collect(child.id)
+        }
+        collect(id)
+        const now = Date.now()
+        const removed = state.items.filter((entry) => doomed.has(entry.id)).map((entry) => ({ ...entry, deletedAt: now }))
+        state.items = state.items.filter((entry) => !doomed.has(entry.id))
+        state.trash = [...removed, ...(state.trash || [])].slice(0, 200)
         await persist()
-        return { removed: id, trashed: true }
+        return { removed: id, trashed: true, cascaded: removed.length - 1 }
       })
     },
 

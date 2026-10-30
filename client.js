@@ -219,6 +219,9 @@ window.__ModuleLoader__.load({
 .dsh-tf-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); }
 .dsh-tf-tag:hover { color: var(--dsw-tf-work); border-color: var(--dsw-tf-work); }
 .dsh-tf-tagfilter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
+.dsh-tf-child { padding-left: 26px; }
+.dsh-tf-child .dsh-tf-row { font-size: 14px; }
+.dsh-tf-childadd { padding: 2px 0 4px 26px; }
 .dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
@@ -773,6 +776,17 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'dsh-tf-actions' },
+          h(
+            'button',
+            {
+              type: 'button',
+              className: 'dsh-tf-icon-btn',
+              title: '加子任务',
+              'aria-label': '加子任务',
+              onClick: () => props.onAddChild(item),
+            },
+            h('span', { className: 'dsh-tf-emoji', 'aria-hidden': true }, '＋'),
+          ),
           item.origin && item.origin.sessionId
             ? h(
                 'button',
@@ -897,6 +911,8 @@ window.__ModuleLoader__.load({
       const [dueEditingId, setDueEditingId] = useState('')
       const [undoItem, setUndoItem] = useState(null)
       const [tagFilter, setTagFilter] = useState('')
+      const [childFor, setChildFor] = useState('')
+      const [childText, setChildText] = useState('')
       const undoTimer = useRef(null)
       const todayKey = useMemo(() => {
         const date = new Date()
@@ -1014,6 +1030,20 @@ window.__ModuleLoader__.load({
         const next = order[(index + 1) % order.length]
         try {
           await call('todos.update', { id: item.id, patch: { recurring: next } })
+          await loadTodos(true)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
+      /** Add a subtask under one todo. */
+      const addChild = async (parent) => {
+        const title = childText.trim()
+        if (!title) return
+        try {
+          await call('todos.add', { title, parentId: parent.id, category: parent.category })
+          setChildFor('')
+          setChildText('')
           await loadTodos(true)
         } catch (failure) {
           setError(messageOf(failure))
@@ -1235,6 +1265,10 @@ window.__ModuleLoader__.load({
           onSaveDue: saveDue,
           onCycleRecurring: cycleRecurring,
           onTagClick: (tag) => setTagFilter((current) => (current === tag ? '' : tag)),
+          onAddChild: (entry) => {
+            setChildFor((current) => (current === entry.id ? '' : entry.id))
+            setChildText('')
+          },
           onPortal: openPortalFor,
           onOpenConversation: openConversationFor,
         })
@@ -1509,7 +1543,42 @@ window.__ModuleLoader__.load({
                       'section',
                       null,
                       h('h2', { className: 'dsh-tf-sec' }, t('todo.open'), h('span', { className: 'dsh-tf-sec-count' }, openItems.length)),
-                      openItems.map(row),
+                      openItems
+                        .filter((item) => !item.parentId)
+                        .map((item) =>
+                          h(
+                            'div',
+                            { key: item.id },
+                            row(item),
+                            (items.filter((child) => child.parentId === item.id)).map((child) =>
+                              h('div', { className: 'dsh-tf-child', key: child.id }, row(child)),
+                            ),
+                            childFor === item.id
+                              ? h(
+                                  'div',
+                                  { className: 'dsh-tf-child dsh-tf-childadd' },
+                                  h('input', {
+                                    className: 'dsh-tf-edit',
+                                    autoFocus: true,
+                                    value: childText,
+                                    placeholder: '子任务内容，回车添加',
+                                    onChange: (event) => setChildText(event.target.value),
+                                    onKeyDown: (event) => {
+                                      if (event.key === 'Enter') addChild(item)
+                                      if (event.key === 'Escape') {
+                                        setChildFor('')
+                                        setChildText('')
+                                      }
+                                    },
+                                    onBlur: () => {
+                                      setChildFor('')
+                                      setChildText('')
+                                    },
+                                  }),
+                                )
+                              : null,
+                          ),
+                        ),
                     )
                   : null,
                 doneItems.length > 0

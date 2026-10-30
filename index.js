@@ -81,7 +81,19 @@ export function apply(ctx, rawConfig) {
     if (due) item.due = due
     const recurring = normalizeRecurring(raw.recurring)
     if (recurring) item.recurring = recurring
+    const tags = normalizeTags(raw.tags)
+    if (tags) item.tags = tags
     return item
+  }
+
+  /**
+   * Coerce a tag list: trimmed, de-duplicated, at most six short labels.
+   * @param raw - candidate array.
+   */
+  function normalizeTags(raw) {
+    if (!Array.isArray(raw)) return undefined
+    const clean = [...new Set(raw.map((tag) => String(tag || '').trim().slice(0, 12)).filter(Boolean))].slice(0, 6)
+    return clean.length ? clean : undefined
   }
 
   /**
@@ -326,6 +338,7 @@ export function apply(ctx, rawConfig) {
       const category = normalizeCategory(payload && payload.category)
       const due = normalizeDue(payload && payload.due)
       const recurring = normalizeRecurring(payload && payload.recurring)
+      const tags = normalizeTags(payload && payload.tags)
       return enqueue(async () => {
         await loadState()
         const now = Date.now()
@@ -334,6 +347,7 @@ export function apply(ctx, rawConfig) {
         if (origin) item.origin = origin
         if (due) item.due = due
         if (recurring) item.recurring = recurring
+        if (tags) item.tags = tags
         state.items = sortItems([...state.items, item])
         await persist()
         return { item: { ...item } }
@@ -377,6 +391,11 @@ export function apply(ctx, rawConfig) {
           const recurring = normalizeRecurring(patch.recurring)
           if (recurring) item.recurring = recurring
           else delete item.recurring
+        }
+        if (Object.prototype.hasOwnProperty.call(patch, 'tags')) {
+          const tags = normalizeTags(patch.tags)
+          if (tags) item.tags = tags
+          else delete item.tags
         }
         if (Object.prototype.hasOwnProperty.call(patch, 'origin')) {
           const origin = normalizeOrigin(patch.origin)
@@ -788,6 +807,11 @@ export function apply(ctx, rawConfig) {
           description:
             'Repeat rule for habits: daily / weekly / monthly (empty string clears it). Completing the todo then creates the next occurrence automatically.',
         },
+        tags: {
+          type: 'array',
+          items: { type: 'string' },
+          description: 'Free-form labels (at most six, 12 chars each) for grouping, e.g. ["引隆", "招标"].',
+        },
       },
     },
     output: {
@@ -838,6 +862,7 @@ export function apply(ctx, rawConfig) {
           origin,
           due: typeof input.due === 'string' ? input.due : undefined,
           recurring: typeof input.recurring === 'string' ? input.recurring : undefined,
+          tags: Array.isArray(input.tags) ? input.tags : undefined,
           link: typeof input.path === 'string' && input.path.trim()
             ? { path: input.path.trim(), kind: input.kind === 'dir' ? 'dir' : 'file' }
             : undefined,
@@ -851,6 +876,7 @@ export function apply(ctx, rawConfig) {
         if (input.category === 'work' || input.category === 'life') patch.category = input.category
         if (typeof input.due === 'string') patch.due = input.due
         if (typeof input.recurring === 'string') patch.recurring = input.recurring
+        if (Array.isArray(input.tags)) patch.tags = input.tags
         if (typeof input.path === 'string') {
           patch.link = input.path.trim()
             ? { path: input.path.trim(), kind: input.kind === 'dir' ? 'dir' : 'file' }

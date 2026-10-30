@@ -216,7 +216,9 @@ window.__ModuleLoader__.load({
 .dsh-tf-adddue { margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: .5; }
 .dsh-tf-rec { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: #8b5cf6; border: 1px solid rgba(139,92,246,.45); background: rgba(139,92,246,.1); }
 .dsh-tf-stats { display: flex; align-items: center; gap: 10px; padding: 0 2px 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
-.dsh-tf-stats-hint { margin-left: auto; opacity: .65; }
+.dsh-tf-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); }
+.dsh-tf-tag:hover { color: var(--dsw-tf-work); border-color: var(--dsw-tf-work); }
+.dsh-tf-tagfilter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 .dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
@@ -741,6 +743,20 @@ window.__ModuleLoader__.load({
                       item.recurring.freq === 'daily' ? '每天' : item.recurring.freq === 'weekly' ? '每周' : '每月',
                     )
                   : null,
+                (item.tags || []).map((tag) =>
+                  h(
+                    'span',
+                    {
+                      className: 'dsh-tf-tag',
+                      key: tag,
+                      onClick: (event) => {
+                        event.stopPropagation()
+                        props.onTagClick(tag)
+                      },
+                    },
+                    tag,
+                  ),
+                ),
                 props.dueEditing
                   ? h('input', {
                       type: 'date',
@@ -880,6 +896,7 @@ window.__ModuleLoader__.load({
       const [editText, setEditText] = useState('')
       const [dueEditingId, setDueEditingId] = useState('')
       const [undoItem, setUndoItem] = useState(null)
+      const [tagFilter, setTagFilter] = useState('')
       const undoTimer = useRef(null)
       const todayKey = useMemo(() => {
         const date = new Date()
@@ -890,13 +907,14 @@ window.__ModuleLoader__.load({
         const needle = query.trim().toLowerCase()
         return items
           .filter((item) => (scope === 'all' ? true : (item.category === 'life' ? 'life' : 'work') === scope))
+          .filter((item) => (tagFilter ? (item.tags || []).includes(tagFilter) : true))
           .filter((item) => (needle ? String(item.title || '').toLowerCase().includes(needle) : true))
           .filter((item) => {
             if (quick === 'today') return item.due === todayKey && !item.done
             if (quick === 'overdue') return Boolean(item.due) && item.due < todayKey && !item.done
             return true
           })
-      }, [items, scope, query, quick, todayKey])
+      }, [items, scope, query, quick, todayKey, tagFilter])
       const openItems = useMemo(() => visibleItems.filter((item) => !item.done), [visibleItems])
       const doneItems = useMemo(() => visibleItems.filter((item) => item.done), [visibleItems])
       const scopeCounts = useMemo(() => {
@@ -1216,6 +1234,7 @@ window.__ModuleLoader__.load({
           onStartDue: (entry) => setDueEditingId(entry.id),
           onSaveDue: saveDue,
           onCycleRecurring: cycleRecurring,
+          onTagClick: (tag) => setTagFilter((current) => (current === tag ? '' : tag)),
           onPortal: openPortalFor,
           onOpenConversation: openConversationFor,
         })
@@ -1394,6 +1413,26 @@ window.__ModuleLoader__.load({
                 scopeButton('work', t('filter.work'), scopeCounts.work),
                 scopeButton('life', t('filter.life'), scopeCounts.life),
               ),
+              (() => {
+                const tags = [...new Set(items.flatMap((item) => item.tags || []))].slice(0, 14)
+                if (!tags.length) return null
+                return h(
+                  'div',
+                  { className: 'dsh-tf-tagfilter' },
+                  tags.map((tag) =>
+                    h(
+                      'button',
+                      {
+                        type: 'button',
+                        key: tag,
+                        className: `dsh-tf-quickfilter${tagFilter === tag ? ' is-on' : ''}`,
+                        onClick: () => setTagFilter((current) => (current === tag ? '' : tag)),
+                      },
+                      tag,
+                    ),
+                  ),
+                )
+              })(),
               error
                 ? h(
                     'div',

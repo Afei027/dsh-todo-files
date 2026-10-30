@@ -207,7 +207,6 @@ window.__ModuleLoader__.load({
 .dsh-tf-quick { display: flex; gap: 8px; margin-bottom: 10px; }
 .dsh-tf-quickinput { flex: 1; min-width: 0; height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: inherit; font: inherit; font-size: 14px; outline: none; }
 .dsh-tf-quickinput:focus { border-color: var(--dsw-tf-work); }
-.dsh-tf-tools { display: flex; gap: 6px; margin: 0 0 10px; }
 .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: inherit; font: inherit; font-size: 13px; outline: none; }
 .dsh-tf-quickfilter { height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 13px; cursor: pointer; }
 .dsh-tf-quickfilter.is-on { border-color: var(--dsw-tf-work); color: var(--dsw-tf-work); background: color-mix(in srgb, var(--dsw-tf-work) 12%, transparent); }
@@ -215,13 +214,30 @@ window.__ModuleLoader__.load({
 .dsh-tf-dateinput { margin-left: 8px; height: 26px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 12px; }
 .dsh-tf-adddue { margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: .5; }
 .dsh-tf-rec { display: inline-block; margin-left: 8px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: #8b5cf6; border: 1px solid rgba(139,92,246,.45); background: rgba(139,92,246,.1); }
-.dsh-tf-stats { display: flex; align-items: center; gap: 10px; padding: 0 2px 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); }
 .dsh-tf-tag { display: inline-block; margin-left: 6px; padding: 0 6px; border-radius: 5px; font-size: 11.5px; line-height: 17px; cursor: pointer; color: var(--dsw-alias-label-secondary); border: 1px solid var(--dsw-alias-border-l2); background: var(--dsw-alias-bg-layer-2); }
 .dsh-tf-tag:hover { color: var(--dsw-tf-work); border-color: var(--dsw-tf-work); }
 .dsh-tf-tagfilter { display: flex; flex-wrap: wrap; gap: 6px; margin: 0 0 8px; }
 .dsh-tf-child { padding-left: 26px; }
 .dsh-tf-child .dsh-tf-row { font-size: 14px; }
 .dsh-tf-childadd { padding: 2px 0 4px 26px; }
+.dsh-tf-toolbar { display: flex; align-items: center; gap: 8px; margin-bottom: 8px; }
+.dsh-tf-toolbar .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid transparent; background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
+.dsh-tf-toolbar .dsh-tf-search:focus { border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-base); }
+.dsh-tf-seg { display: inline-flex; align-items: center; gap: 1px; padding: 2px; border-radius: 9px; background: var(--dsw-alias-bg-layer-2); flex: none; }
+.dsh-tf-seg .dsh-tf-filter { height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; font: inherit; font-size: 12.5px; font-weight: 600; color: var(--dsw-alias-label-secondary); cursor: pointer; transition: background .15s ease, color .15s ease; }
+.dsh-tf-seg .dsh-tf-filter.is-active { background: var(--dsw-alias-bg-base); color: var(--dsw-alias-label-primary); box-shadow: 0 1px 2px rgba(15,23,42,.10); }
+.dsh-tf-seg .dsh-tf-filter.is-active[data-scope="work"] { color: var(--dsw-tf-work); }
+.dsh-tf-seg .dsh-tf-filter.is-active[data-scope="life"] { color: var(--dsw-tf-life); }
+.dsh-tf-chip { height: 26px; padding: 0 9px; border: 0; border-radius: 7px; background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.dsh-tf-chip:hover { color: var(--dsw-alias-label-primary); }
+.dsh-tf-chip.is-on { background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); }
+.dsh-tf-seg .dsh-tf-filter-count { margin-left: 4px; opacity: .6; font-weight: 500; }
+.dsh-tf-row { border-radius: 8px; transition: background .15s ease; }
+.dsh-tf-row:hover { background: var(--dsw-alias-bg-layer-2); }
+.dsh-tf-row:active { transform: translateY(1px); }
+.dsh-tf-quick { display: flex; gap: 6px; margin-bottom: 10px; }
+.dsh-tf-quick .dsh-tf-quickinput { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px dashed var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
+.dsh-tf-quick .dsh-tf-quickinput:focus { border-style: solid; border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-layer-1); }
 .dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
@@ -1312,7 +1328,7 @@ window.__ModuleLoader__.load({
               style: { display: 'none' },
               onChange: importFile,
             }),
-            h('span', { className: 'dsh-tf-datarow-hint' }, '每次保存都留一份 todos.json.bak'),
+            h('span', { className: 'dsh-tf-datarow-hint' }, ''),
           ),
           h(
             'div',
@@ -1365,7 +1381,14 @@ window.__ModuleLoader__.load({
               'div',
               { className: 'dsh-tf-headline' },
               h('h1', { className: 'dsh-tf-title' }, t('panel.title')),
-              h('span', { className: 'dsh-tf-sub' }, openCount ? t('panel.sub', { open: openCount }) : t('panel.subEmpty')),
+              (() => {
+                const overdue = items.filter((item) => !item.done && item.due && item.due < todayKey).length
+                const today = items.filter((item) => !item.done && item.due === todayKey).length
+                const parts = [`${openCount} 条未完成`]
+                if (today) parts.push(`今天 ${today}`)
+                if (overdue) parts.push(`逾期 ${overdue}`)
+                return h('span', { className: 'dsh-tf-sub' }, parts.join(' · '))
+              })(),
             ),
             h(
               'button',
@@ -1387,14 +1410,27 @@ window.__ModuleLoader__.load({
               { className: 'dsh-tf-pane' },
               h(
                 'div',
-                { className: 'dsh-tf-stats' },
-                [
-                  `共 ${items.length}`,
-                  `完成 ${items.filter((item) => item.done).length}`,
-                  `逾期 ${items.filter((item) => !item.done && item.due && item.due < todayKey).length}`,
-                  `今天 ${items.filter((item) => !item.done && item.due === todayKey).length}`,
-                ].join(' · '),
-                h('span', { className: 'dsh-tf-stats-hint' }, 'n 新建 · / 搜索'),
+                { className: 'dsh-tf-toolbar' },
+                h('input', {
+                  className: 'dsh-tf-search',
+                  ref: searchRef,
+                  value: query,
+                  placeholder: t('search.placeholder'),
+                  onChange: (event) => setQuery(event.target.value),
+                }),
+                h(
+                  'div',
+                  { className: 'dsh-tf-seg', role: 'group', 'aria-label': t('panel.title') },
+                  scopeButton('all', '全部', scopeCounts.all),
+                  scopeButton('work', '办公', scopeCounts.work),
+                  scopeButton('life', '生活', scopeCounts.life),
+                ),
+                h(
+                  'div',
+                  { className: 'dsh-tf-seg is-quiet' },
+                  h('button', { type: 'button', className: `dsh-tf-chip${quick === 'today' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'today' ? 'all' : 'today') }, '今天'),
+                  h('button', { type: 'button', className: `dsh-tf-chip${quick === 'overdue' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue') }, '逾期'),
+                ),
               ),
               h(
                 'div',
@@ -1410,42 +1446,6 @@ window.__ModuleLoader__.load({
                   },
                 }),
                 h('button', { type: 'button', className: 'dsh-tf-btn is-solid', onClick: quickAdd }, t('quick.add')),
-              ),
-              h(
-                'div',
-                { className: 'dsh-tf-tools' },
-                h('input', {
-                  className: 'dsh-tf-search',
-                  ref: searchRef,
-                  value: query,
-                  placeholder: t('search.placeholder'),
-                  onChange: (event) => setQuery(event.target.value),
-                }),
-                h(
-                  'button',
-                  {
-                    type: 'button',
-                    className: `dsh-tf-quickfilter${quick === 'today' ? ' is-on' : ''}`,
-                    onClick: () => setQuick(quick === 'today' ? 'all' : 'today'),
-                  },
-                  t('filter.today'),
-                ),
-                h(
-                  'button',
-                  {
-                    type: 'button',
-                    className: `dsh-tf-quickfilter${quick === 'overdue' ? ' is-on' : ''}`,
-                    onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue'),
-                  },
-                  t('filter.overdue'),
-                ),
-              ),
-              h(
-                'div',
-                { className: 'dsh-tf-filters', role: 'group', 'aria-label': t('panel.title') },
-                scopeButton('all', t('filter.all'), scopeCounts.all),
-                scopeButton('work', t('filter.work'), scopeCounts.work),
-                scopeButton('life', t('filter.life'), scopeCounts.life),
               ),
               (() => {
                 const tags = [...new Set(items.flatMap((item) => item.tags || []))].slice(0, 14)

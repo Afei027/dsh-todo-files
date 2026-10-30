@@ -972,6 +972,44 @@ window.__ModuleLoader__.load({
       }
 
       const fileInput = useRef(null)
+      const [showTrash, setShowTrash] = useState(false)
+      const [trashItems, setTrashItems] = useState([])
+
+      /** Load the trash and flip into it. */
+      const toggleTrash = async () => {
+        if (showTrash) {
+          setShowTrash(false)
+          return
+        }
+        try {
+          const value = await call('todos.trash')
+          setTrashItems(Array.isArray(value.items) ? value.items : [])
+          setShowTrash(true)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
+      const restoreTrash = async (id) => {
+        try {
+          await call('todos.restore', { id })
+          const value = await call('todos.trash')
+          setTrashItems(Array.isArray(value.items) ? value.items : [])
+          await loadTodos(true)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
+      const purgeTrash = async (id) => {
+        try {
+          await call('todos.purge', id ? { id } : {})
+          const value = await call('todos.trash')
+          setTrashItems(Array.isArray(value.items) ? value.items : [])
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
 
       /** Download the whole list as a JSON file. */
       const exportTodos = async () => {
@@ -1155,6 +1193,11 @@ window.__ModuleLoader__.load({
               { type: 'button', className: 'dsh-tf-linkbtn', onClick: () => fileInput.current && fileInput.current.click() },
               '导入',
             ),
+            h(
+              'button',
+              { type: 'button', className: 'dsh-tf-linkbtn', onClick: toggleTrash },
+              showTrash ? '关闭回收站' : '回收站',
+            ),
             h('input', {
               type: 'file',
               accept: '.json,application/json',
@@ -1302,9 +1345,45 @@ window.__ModuleLoader__.load({
                     h('button', { type: 'button', className: 'dsh-tf-btn', style: { color: 'inherit', borderColor: 'currentColor' }, onClick: undoDelete }, '撤销'),
                   )
                 : null,
+              showTrash
+                ? h(
+                    'section',
+                    { className: 'dsh-tf-trash' },
+                    h(
+                      'div',
+                      { className: 'dsh-tf-sec' },
+                      '回收站 · 7 天内可恢复',
+                      h('span', { className: 'dsh-tf-sec-count' }, trashItems.length),
+                      trashItems.length
+                        ? h(
+                            'button',
+                            {
+                              type: 'button',
+                              className: 'dsh-tf-linkbtn',
+                              style: { marginLeft: 'auto' },
+                              onClick: () => purgeTrash(),
+                            },
+                            '清空',
+                          )
+                        : null,
+                    ),
+                    trashItems.length
+                      ? trashItems.map((item) =>
+                          h(
+                            'div',
+                            { className: 'dsh-tf-row is-done', key: item.id },
+                            h('span', { className: 'dsh-tf-text', style: { flex: 1 } }, item.title),
+                            h('span', { className: 'dsh-tf-due' }, new Date(item.deletedAt).toLocaleDateString()),
+                            h('button', { type: 'button', className: 'dsh-tf-linkbtn', onClick: () => restoreTrash(item.id) }, '恢复'),
+                            h('button', { type: 'button', className: 'dsh-tf-linkbtn', onClick: () => purgeTrash(item.id) }, '彻底删'),
+                          ),
+                        )
+                      : h('div', { className: 'dsh-tf-note' }, '回收站是空的。'),
+                  )
+                : null,
               h(
                 'div',
-                { className: 'dsh-tf-list', onClick: refreshAfterClick },
+                { className: 'dsh-tf-list', style: showTrash ? { display: 'none' } : undefined, onClick: refreshAfterClick },
                 openItems.length === 0 && doneItems.length === 0 && !busy
                   ? h(
                       'div',

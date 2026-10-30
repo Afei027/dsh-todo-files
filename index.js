@@ -139,26 +139,40 @@ export function apply(ctx, rawConfig) {
     return { path: target, name, kind: raw.kind === 'dir' ? 'dir' : 'file' }
   }
 
+  /** Deleted items are kept this long so a mistake can be undone the next day. */
+  const TRASH_DAYS = 7
+
   /** Load the store once per process generation. */
   async function loadState() {
     if (state) return state
     let items = []
+    let trash = []
     try {
       const text = await fsp.readFile(storeFile, 'utf8')
       const parsed = JSON.parse(text)
       if (parsed && Array.isArray(parsed.items)) {
         items = parsed.items.map(normalizeItem).filter(Boolean)
       }
+      if (parsed && Array.isArray(parsed.trash)) {
+        const cutoff = Date.now() - TRASH_DAYS * 86400000
+        trash = parsed.trash
+          .map((entry) => (entry && normalizeItem(entry) ? { ...normalizeItem(entry), deletedAt: Number(entry.deletedAt) || Date.now() } : null))
+          .filter((entry) => entry && entry.deletedAt > cutoff)
+      }
     } catch (error) {
       if (!error || error.code !== 'ENOENT') warn('could not read the todo store', error)
     }
-    state = { version: 1, items: sortItems(items) }
+    state = { version: 2, items: sortItems(items), trash }
     return state
   }
 
   /** Write the store atomically, keeping the previous generation beside it. */
   async function persist() {
-    const payload = JSON.stringify({ version: 1, items: state ? state.items : [] }, null, 2)
+    const payload = JSON.stringify(
+      { version: 2, items: state ? state.items : [], trash: state && Array.isArray(state.trash) ? state.trash : [] },
+      null,
+      2,
+    )
     await fsp.mkdir(dataDir, { recursive: true })
     // Keep one previous generation so a bad write or a mistaken import can be rolled back.
     try {
@@ -326,18 +340,61 @@ export function apply(ctx, rawConfig) {
     },
 
     /**
-     * Delete one todo.
+     * Soft-delete one todo: it moves to the trash and stays recoverable for seven days.
      * @param payload - `{ id }`.
      */
     async 'todos.remove'(payload) {
       const id = String((payload && payload.id) || '')
       return enqueue(async () => {
         await loadState()
-        const before = state.items.length
-        state.items = state.items.filter((item) => item.id !== id)
-        if (state.items.length === before) throw fail('这条待办已经不在了', 404)
+        const item = state.items.find((entry) => entry.id === id)
+        if (!item) throw fail('这条待办已经不在了', 404)
+        state.items = state.items.filter((entry) => entry.id !== id)
+        state.trash = [{ ...item, deletedAt: Date.now() }, ...(state.trash || [])].slice(0, 200)
         await persist()
-        return { removed: id }
+        return { removed: id, trashed: true }
+      })
+    },
+
+    /** List what is currently in the trash. */
+    async 'todos.trash'() {
+      await loadState()
+      const cutoff = Date.now() - TRASH_DAYS * 86400000
+      state.trash = (state.trash || []).filter((entry) => entry.deletedAt > cutoff)
+      return { items: state.trash.slice(), days: TRASH_DAYS }
+    },
+
+    /**
+     * Put one trashed todo back on the list.
+     * @param payload - `{ id }`.
+     */
+    async 'todos.restore'(payload) {
+      const id = String((payload && payload.id) || '')
+      return enqueue(async () => {
+        await loadState()
+        const entry = (state.trash || []).find((item) => item.id === id)
+        if (!entry) throw fail('回收站里没有这条', 404)
+        state.trash = (state.trash || []).filter((item) => item.id !== id)
+        const { deletedAt, ...restored } = entry
+        state.items = sortItems([{ ...restored, updatedAt: Date.now() }, ...state.items])
+        await persist()
+        return { item: restored }
+      })
+    },
+
+    /**
+     * Delete permanently: one entry when `id` is given, the whole trash otherwise.
+     * @param payload - `{ id? }`.
+     */
+    async 'todos.purge'(payload) {
+      const id = String((payload && payload.id) || '')
+      return enqueue(async () => {
+        await loadState()
+        const before = (state.trash || []).length
+        state.trash = id ? (state.trash || []).filter((item) => item.id !== id) : []
+        if (id && state.trash.length === before) throw fail('回收站里没有这条', 404)
+        await persist()
+        return { removed: before - state.trash.length }
       })
     },
 

@@ -142,7 +142,8 @@ window.__ModuleLoader__.load({
   background: var(--dsw-alias-bg-layer-1); border: 1px solid var(--dsw-alias-border-l1);
   border-radius: 12px; padding: 4px;
 }
-.dsh-tf-filters { display: flex; align-items: center; gap: 8px; margin: 0 0 12px; flex: none; }
+.dsh-tf-filters { display: contents; }
+.dsh-tf-divider { flex: none; width: 1px; height: 18px; margin: 0 2px; background: var(--dsw-alias-border-l1); }
 .dsh-tf-filter {
   display: inline-flex; align-items: center; height: 32px; padding: 0 14px;
   border-radius: 9px; border: 1px solid var(--tf-line); background: transparent;
@@ -227,7 +228,7 @@ window.__ModuleLoader__.load({
 .dsh-tf-child .dsh-tf-row { font-size: 14px; }
 .dsh-tf-childadd { padding: 2px 0 4px 26px; }
 .dsh-tf-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
-.dsh-tf-group { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; padding-left: 8px; border-left: 1px solid var(--dsw-alias-border-l1); flex: none; }
+.dsh-tf-group { display: contents; }
 .dsh-tf-searchbtn { flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 14px; line-height: 1; cursor: pointer; transition: background .15s ease, color .15s ease; }
 .dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-searchbtn { margin-left: auto; }
@@ -1412,6 +1413,7 @@ window.__ModuleLoader__.load({
                   scopeButton('work', '办公', scopeCounts.work),
                   scopeButton('life', '生活', scopeCounts.life),
                 ),
+                h('span', { className: 'dsh-tf-divider', 'aria-hidden': true }),
                 h(
                   'div',
                   { className: 'dsh-tf-group' },

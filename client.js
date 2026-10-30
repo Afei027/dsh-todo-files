@@ -216,6 +216,8 @@ window.__ModuleLoader__.load({
 .dsh-tf-adddue { margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: .5; }
 .dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
 .dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
+.dsh-tf-datarow { display: flex; align-items: center; gap: 12px; padding: 0 2px 8px; }
+.dsh-tf-datarow-hint { flex: 1; min-width: 0; font-size: 12px; color: var(--dsw-alias-label-secondary); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .dsh-tf-row.is-done .dsh-tf-due { opacity: .6; }
 .dsh-tf-row.is-done .dsh-tf-text { color: var(--dsw-alias-label-secondary); text-decoration: line-through; text-decoration-thickness: 1px; }
 .dsh-tf-check {
@@ -969,6 +971,47 @@ window.__ModuleLoader__.load({
         }
       }
 
+      const fileInput = useRef(null)
+
+      /** Download the whole list as a JSON file. */
+      const exportTodos = async () => {
+        try {
+          const value = await call('todos.export')
+          const stamp = new Date()
+          const name = `todos-${stamp.getFullYear()}${String(stamp.getMonth() + 1).padStart(2, '0')}${String(stamp.getDate()).padStart(2, '0')}-${String(stamp.getHours()).padStart(2, '0')}${String(stamp.getMinutes()).padStart(2, '0')}.json`
+          const blob = new Blob([value.json], { type: 'application/json;charset=utf-8' })
+          const url = URL.createObjectURL(blob)
+          const anchor = document.createElement('a')
+          anchor.href = url
+          anchor.download = name
+          document.body.appendChild(anchor)
+          anchor.click()
+          anchor.remove()
+          URL.revokeObjectURL(url)
+          setNotice(`已导出 ${value.count} 条到 ${name}`)
+          window.setTimeout(() => setNotice(''), 3200)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
+      /** Replace the list from a chosen file after one confirmation. */
+      const importFile = async (event) => {
+        const file = event.target.files && event.target.files[0]
+        event.target.value = ''
+        if (!file) return
+        try {
+          const text = await file.text()
+          if (!window.confirm('导入会替换当前全部待办（原文件已留 .bak 备份），继续？')) return
+          const value = await call('todos.import', { json: text })
+          await loadTodos(true)
+          setNotice(`已导入 ${value.imported} 条（替换 ${value.replaced} 条）`)
+          window.setTimeout(() => setNotice(''), 4000)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
       const removeTodo = async (item) => {
         try {
           await call('todos.remove', { id: item.id })
@@ -1103,6 +1146,24 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'dsh-tf-foot' },
+          h(
+            'div',
+            { className: 'dsh-tf-datarow' },
+            h('button', { type: 'button', className: 'dsh-tf-linkbtn', onClick: exportTodos }, '导出 JSON'),
+            h(
+              'button',
+              { type: 'button', className: 'dsh-tf-linkbtn', onClick: () => fileInput.current && fileInput.current.click() },
+              '导入',
+            ),
+            h('input', {
+              type: 'file',
+              accept: '.json,application/json',
+              ref: fileInput,
+              style: { display: 'none' },
+              onChange: importFile,
+            }),
+            h('span', { className: 'dsh-tf-datarow-hint' }, '每次保存都留一份 todos.json.bak'),
+          ),
           h(
             'div',
             { className: 'dsh-tf-composer' },

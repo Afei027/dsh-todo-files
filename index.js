@@ -156,10 +156,16 @@ export function apply(ctx, rawConfig) {
     return state
   }
 
-  /** Write the store atomically (temp file in the same directory, then rename). */
+  /** Write the store atomically, keeping the previous generation beside it. */
   async function persist() {
     const payload = JSON.stringify({ version: 1, items: state ? state.items : [] }, null, 2)
     await fsp.mkdir(dataDir, { recursive: true })
+    // Keep one previous generation so a bad write or a mistaken import can be rolled back.
+    try {
+      await fsp.copyFile(storeFile, `${storeFile}.bak`)
+    } catch (error) {
+      if (!error || error.code !== 'ENOENT') warn('could not refresh the backup', error)
+    }
     const temp = `${storeFile}.${process.pid}.tmp`
     await fsp.writeFile(temp, payload, 'utf8')
     await fsp.rename(temp, storeFile)
@@ -343,6 +349,40 @@ export function apply(ctx, rawConfig) {
         state.items = state.items.filter((item) => !item.done)
         await persist()
         return { removed: before - state.items.length }
+      })
+    },
+
+    /** Hand the whole list out as portable JSON. */
+    async 'todos.export'() {
+      await loadState()
+      return {
+        json: JSON.stringify({ version: 1, exportedAt: Date.now(), items: state.items }, null, 2),
+        count: state.items.length,
+      }
+    },
+
+    /**
+     * Replace the list from exported JSON, after validating every record.
+     * @param payload - `{ json }`.
+     */
+    async 'todos.import'(payload) {
+      const text = String((payload && payload.json) || '')
+      let decoded
+      try {
+        decoded = JSON.parse(text)
+      } catch {
+        throw fail('这个文件不是有效的 JSON')
+      }
+      const raw = Array.isArray(decoded) ? decoded : decoded && Array.isArray(decoded.items) ? decoded.items : null
+      if (!raw) throw fail('文件里没有 items 数组')
+      const incoming = raw.map(normalizeItem).filter(Boolean)
+      if (!incoming.length) throw fail('文件里没有任何可用的待办')
+      return enqueue(async () => {
+        await loadState()
+        const previous = state.items.length
+        state.items = sortItems(incoming)
+        await persist()
+        return { imported: state.items.length, replaced: previous }
       })
     },
 

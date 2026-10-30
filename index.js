@@ -15,6 +15,7 @@
 import { spawn } from 'node:child_process'
 import { promises as fsp } from 'node:fs'
 import { randomUUID } from 'node:crypto'
+import { fileURLToPath } from 'node:url'
 import os from 'node:os'
 import path from 'node:path'
 
@@ -197,6 +198,72 @@ export function apply(ctx, rawConfig) {
 
   /** Deleted items are kept this long so a mistake can be undone the next day. */
   const TRASH_DAYS = 7
+
+  /** The published repository this bundle updates itself from. */
+  const REPO_SPEC = 'github:Afei027/dsh-todo-files'
+  const REPO_RAW = 'https://raw.githubusercontent.com/Afei027/dsh-todo-files/main/package.json'
+  const UPDATE_TTL = 30 * 60 * 1000
+  const updateCache = { at: 0, value: null, error: '' }
+
+  /** Compare two dotted numeric versions; positive when `a` is newer. */
+  function compareVersions(a, b) {
+    const left = String(a || '0').split('.').map((part) => Number(part) || 0)
+    const right = String(b || '0').split('.').map((part) => Number(part) || 0)
+    for (let index = 0; index < Math.max(left.length, right.length); index += 1) {
+      const delta = (left[index] || 0) - (right[index] || 0)
+      if (delta) return delta
+    }
+    return 0
+  }
+
+  /**
+   * Run one git command inside a checkout.
+   * @param cwd - repository directory.
+   * @param args - git arguments.
+   */
+  function runGit(cwd, args) {
+    return new Promise((resolve) => {
+      let output = ''
+      const child = spawn('git', args, { cwd, windowsHide: true })
+      child.stdout.on('data', (chunk) => {
+        output += chunk
+      })
+      child.stderr.on('data', (chunk) => {
+        output += chunk
+      })
+      child.on('error', (error) => resolve({ code: -1, output: String(error.message || error) }))
+      child.on('close', (code) => resolve({ code, output }))
+    })
+  }
+
+  /** This package's own version, read once. */
+  let ownVersion = ''
+  async function localVersion() {
+    if (ownVersion) return ownVersion
+    try {
+      const text = await fsp.readFile(fileURLToPath(new URL('./package.json', import.meta.url)), 'utf8')
+      ownVersion = String(JSON.parse(text).version || '')
+    } catch {
+      ownVersion = ''
+    }
+    return ownVersion
+  }
+
+  /** The version published on the repository's default branch, cached for a while. */
+  async function remoteVersion() {
+    if (updateCache.value && Date.now() - updateCache.at < UPDATE_TTL) return updateCache
+    try {
+      const response = await fetch(REPO_RAW, { signal: AbortSignal.timeout(10000) })
+      if (!response.ok) throw new Error(`HTTP ${response.status}`)
+      const parsed = await response.json()
+      updateCache.at = Date.now()
+      updateCache.value = String(parsed.version || '')
+      updateCache.error = ''
+    } catch (error) {
+      updateCache.error = String((error && error.message) || error)
+    }
+    return updateCache
+  }
 
   /** Load the store once per process generation. */
   async function loadState() {
@@ -496,6 +563,75 @@ export function apply(ctx, rawConfig) {
         await persist()
         return { removed: before - state.trash.length }
       })
+    },
+
+    /**
+     * Report whether the published repository carries a newer version than the one installed.
+     * A locally linked install (development) never reports an update, because applying one would
+     * replace the working copy with a downloaded tarball.
+     */
+    async 'update.check'() {
+      const current = await localVersion()
+      const remote = await remoteVersion()
+      let installedVersion = current
+      let source = ''
+      let enabled = true
+      try {
+        const manager = ctx.get('pluginManager')
+        if (manager && typeof manager.listBundles === 'function') {
+          const bundles = await manager.listBundles()
+          const row = Array.isArray(bundles) ? bundles.find((entry) => entry && entry.name === 'dsh-todo-files') : null
+          if (row) {
+            installedVersion = row.version || current
+            source = row.source || (row.installTarget && row.installTarget.spec) || ''
+            enabled = row.enabled !== false
+          }
+        }
+      } catch (error) {
+        warn('could not read the installed bundle row', error)
+      }
+      const linked = /^(link|file|path):/i.test(source)
+      const linkedDir = linked ? source.replace(/^(link|file|path):/i, '') : ''
+      let linkedRepo = false
+      if (linkedDir) {
+        const gitHead = await fsp.stat(path.join(linkedDir, '.git')).catch(() => null)
+        linkedRepo = Boolean(gitHead)
+      }
+      const latest = remote.value || ''
+      return {
+        current: installedVersion,
+        latest,
+        source,
+        linked,
+        linkedRepo,
+        enabled,
+        available: Boolean(latest) && compareVersions(latest, installedVersion) > 0 && (!linked || linkedRepo),
+        error: remote.value ? '' : remote.error,
+      }
+    },
+
+    /** Install the published version over the current one (a git checkout is pulled instead). */
+    async 'update.apply'() {
+      const state = await ops['update.check']()
+      if (state.linked && state.linkedRepo) {
+        const dir = state.source.replace(/^(link|file|path):/i, '')
+        const result = await runGit(dir, ['pull', '--ff-only'])
+        if (result.code !== 0) throw fail(`拉取失败：${String(result.output || 'git 拒绝了这次更新').slice(-400)}`, 409)
+        ownVersion = ''
+        updateCache.at = 0
+        return { application: 'restart-required', version: state.latest, warnings: [], via: 'git-pull' }
+      }
+      const manager = ctx.get('pluginManager')
+      if (!manager || typeof manager.installBundle !== 'function') throw fail('这个版本的 DSH 不支持插件自更新', 501)
+      const result = await manager.installBundle(REPO_SPEC, { enabled: true })
+      updateCache.at = 0
+      return {
+        application: result && result.application,
+        version: result && result.version,
+        warnings: (result && result.warnings) || [],
+        error: result && result.error,
+        via: 'installBundle',
+      }
     },
 
     /** Drop every completed todo. */

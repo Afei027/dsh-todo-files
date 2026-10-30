@@ -239,6 +239,10 @@ window.__ModuleLoader__.load({
 .dsh-tf-trashbtn:hover { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); }
 .dsh-tf-trashbtn.is-on { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent); }
 .dsh-tf-trashbtn-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.dsh-tf-updatebtn { display: inline-flex; align-items: center; gap: 8px; height: 26px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-tf-work); background: color-mix(in srgb, var(--dsw-tf-work) 10%, transparent); color: var(--dsw-tf-work); font: inherit; font-size: 12.5px; font-weight: 600; cursor: pointer; }
+.dsh-tf-updatebtn:hover { background: color-mix(in srgb, var(--dsw-tf-work) 18%, transparent); }
+.dsh-tf-updatebtn:disabled { opacity: .7; cursor: default; }
+.dsh-tf-updatebtn-act { padding-left: 8px; border-left: 1px solid color-mix(in srgb, var(--dsw-tf-work) 35%, transparent); }
 .dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-toolbar .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
 .dsh-tf-toolbar .dsh-tf-search:focus { border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-base); }
@@ -898,6 +902,8 @@ window.__ModuleLoader__.load({
       const bridge = props.bridge
       const [items, setItems] = useState([])
       const [trashCount, setTrashCount] = useState(0)
+      const [updateInfo, setUpdateInfo] = useState(null)
+      const [updating, setUpdating] = useState(false)
       const [busy, setBusy] = useState(true)
       const [error, setError] = useState('')
       const [notice, setNotice] = useState('')
@@ -923,6 +929,39 @@ window.__ModuleLoader__.load({
       useEffect(() => {
         loadTodos()
       }, [loadTodos])
+
+      // Ask once per page load whether the published repository is ahead of this install.
+      useEffect(() => {
+        let alive = true
+        call('update.check')
+          .then((value) => {
+            if (alive) setUpdateInfo(value)
+          })
+          .catch(() => {})
+        return () => {
+          alive = false
+        }
+      }, [])
+
+      /** Install the published version in place; a linked development copy never offers this. */
+      const applyUpdate = async () => {
+        if (updating) return
+        setUpdating(true)
+        try {
+          const value = await call('update.apply', {}, 300000)
+          setUpdateInfo((current) => ({ ...(current || {}), available: false }))
+          setNotice(
+            value.application === 'restart-required'
+              ? `已安装 v${value.version || ''}，重启 DSH 后生效`
+              : `已更新到 v${value.version || ''}`,
+          )
+          window.setTimeout(() => setNotice(''), 6000)
+        } catch (failure) {
+          setError(messageOf(failure))
+        } finally {
+          setUpdating(false)
+        }
+      }
 
       // Every click inside the list pulls the authoritative list again: DSH may have changed items
       // from the conversation, and a click is the moment the user expects the panel to be current.
@@ -1408,6 +1447,21 @@ window.__ModuleLoader__.load({
                 return h('span', { className: 'dsh-tf-sub' }, parts.join(' · '))
               })(),
             ),
+            updateInfo && updateInfo.available
+              ? h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: 'dsh-tf-updatebtn',
+                    title: `当前 v${updateInfo.current} → v${updateInfo.latest}`,
+                    'aria-label': `有新版 v${updateInfo.latest}，点击更新`,
+                    onClick: applyUpdate,
+                    disabled: updating,
+                  },
+                  updating ? '更新中…' : `新版 v${updateInfo.latest}`,
+                  updating ? null : h('span', { className: 'dsh-tf-updatebtn-act' }, '更新'),
+                )
+              : null,
             trashCount > 0
               ? h(
                   'button',

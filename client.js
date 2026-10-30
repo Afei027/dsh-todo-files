@@ -36,6 +36,11 @@ window.__ModuleLoader__.load({
       'filter.all': '全部',
       'filter.work': '办公',
       'filter.life': '生活',
+      'filter.today': '今天',
+      'filter.overdue': '逾期',
+      'quick.placeholder': '加一条待办，回车保存…',
+      'quick.add': '加',
+      'search.placeholder': '搜索待办…',
       'todo.open': '进行中',
       'todo.done': '已完成',
       'todo.markDone': '标记完成',
@@ -73,6 +78,11 @@ window.__ModuleLoader__.load({
       'filter.all': 'All',
       'filter.work': 'Work',
       'filter.life': 'Life',
+      'filter.today': 'Today',
+      'filter.overdue': 'Overdue',
+      'quick.placeholder': 'Add a todo, Enter to save…',
+      'quick.add': 'Add',
+      'search.placeholder': 'Search todos…',
       'todo.open': 'Open',
       'todo.done': 'Done',
       'todo.markDone': 'Mark done',
@@ -194,6 +204,18 @@ window.__ModuleLoader__.load({
 .dsh-tf-due.is-soon { color: var(--dsh-tf-work); border-color: color-mix(in srgb, var(--dsh-tf-work) 38%, transparent); background: color-mix(in srgb, var(--dsh-tf-work) 9%, transparent); }
 .dsh-tf-due.is-today { color: #a45a00; border-color: color-mix(in srgb, #d97706 45%, transparent); background: color-mix(in srgb, #d97706 12%, transparent); }
 .dsh-tf-due.is-overdue { color: var(--dsw-alias-state-error-primary); border-color: color-mix(in srgb, var(--dsw-alias-state-error-primary) 45%, transparent); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 10%, transparent); }
+.dsh-tf-quick { display: flex; gap: 8px; margin-bottom: 10px; }
+.dsh-tf-quickinput { flex: 1; min-width: 0; height: 32px; padding: 0 11px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-1); color: inherit; font: inherit; font-size: 14px; outline: none; }
+.dsh-tf-quickinput:focus { border-color: var(--dsw-tf-work); }
+.dsh-tf-tools { display: flex; gap: 6px; margin: 0 0 10px; }
+.dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: inherit; font: inherit; font-size: 13px; outline: none; }
+.dsh-tf-quickfilter { height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 13px; cursor: pointer; }
+.dsh-tf-quickfilter.is-on { border-color: var(--dsw-tf-work); color: var(--dsw-tf-work); background: color-mix(in srgb, var(--dsw-tf-work) 12%, transparent); }
+.dsh-tf-edit { width: 100%; min-width: 0; height: 28px; padding: 0 8px; border-radius: 6px; border: 1px solid var(--dsw-tf-work); background: var(--dsw-alias-bg-base); color: inherit; font: inherit; font-size: 15px; outline: none; }
+.dsh-tf-dateinput { margin-left: 8px; height: 26px; border-radius: 6px; border: 1px solid var(--dsw-alias-border-l2); background: transparent; color: inherit; font: inherit; font-size: 12px; }
+.dsh-tf-adddue { margin-left: 8px; font-size: 12px; color: var(--dsw-alias-label-secondary); cursor: pointer; opacity: .5; }
+.dsh-tf-row:hover .dsh-tf-adddue { opacity: 1; }
+.dsh-tf-undo { position: sticky; bottom: 0; display: flex; align-items: center; gap: 10px; margin-top: 8px; padding: 9px 12px; border-radius: 10px; background: var(--dsw-alias-label-primary); color: var(--dsw-alias-bg-base); font-size: 13px; }
 .dsh-tf-row.is-done .dsh-tf-due { opacity: .6; }
 .dsh-tf-row.is-done .dsh-tf-text { color: var(--dsw-alias-label-secondary); text-decoration: line-through; text-decoration-thickness: 1px; }
 .dsh-tf-check {
@@ -684,12 +706,34 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'dsh-tf-main' },
-          h(
-            'div',
-            { className: 'dsh-tf-text' },
-            item.title,
-            due ? h('span', { className: `dsh-tf-due is-${due.tone}`, title: item.due }, due.text) : null,
-          ),
+          props.editing
+            ? h('input', {
+                className: 'dsh-tf-edit',
+                autoFocus: true,
+                value: props.editText,
+                onChange: (event) => props.onEditChange(event.target.value),
+                onKeyDown: (event) => {
+                  if (event.key === 'Enter') props.onSaveEdit(item)
+                  if (event.key === 'Escape') props.onCancelEdit()
+                },
+                onBlur: () => props.onSaveEdit(item),
+              })
+            : h(
+                'div',
+                { className: 'dsh-tf-text', onDoubleClick: () => props.onStartEdit(item), title: '双击改标题' },
+                item.title,
+                props.dueEditing
+                  ? h('input', {
+                      type: 'date',
+                      className: 'dsh-tf-dateinput',
+                      defaultValue: item.due || '',
+                      onChange: (event) => props.onSaveDue(item, event.target.value),
+                      onBlur: () => props.onSaveDue(item, item.due || ''),
+                    })
+                  : due
+                    ? h('span', { className: `dsh-tf-due is-${due.tone}`, title: '点一下改日期', onClick: () => props.onStartDue(item) }, due.text)
+                    : h('span', { className: 'dsh-tf-adddue', onClick: () => props.onStartDue(item) }, '+日期'),
+              ),
         ),
         h(
           'div',
@@ -810,10 +854,30 @@ window.__ModuleLoader__.load({
         return () => window.clearInterval(timer)
       }, [loadTodos])
 
-      const visibleItems = useMemo(
-        () => (scope === 'all' ? items : items.filter((item) => (item.category === 'life' ? 'life' : 'work') === scope)),
-        [items, scope],
-      )
+      const [quickText, setQuickText] = useState('')
+      const [query, setQuery] = useState('')
+      const [quick, setQuick] = useState('all')
+      const [editingId, setEditingId] = useState('')
+      const [editText, setEditText] = useState('')
+      const [dueEditingId, setDueEditingId] = useState('')
+      const [undoItem, setUndoItem] = useState(null)
+      const undoTimer = useRef(null)
+      const todayKey = useMemo(() => {
+        const date = new Date()
+        date.setHours(0, 0, 0, 0)
+        return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
+      }, [])
+      const visibleItems = useMemo(() => {
+        const needle = query.trim().toLowerCase()
+        return items
+          .filter((item) => (scope === 'all' ? true : (item.category === 'life' ? 'life' : 'work') === scope))
+          .filter((item) => (needle ? String(item.title || '').toLowerCase().includes(needle) : true))
+          .filter((item) => {
+            if (quick === 'today') return item.due === todayKey && !item.done
+            if (quick === 'overdue') return Boolean(item.due) && item.due < todayKey && !item.done
+            return true
+          })
+      }, [items, scope, query, quick, todayKey])
       const openItems = useMemo(() => visibleItems.filter((item) => !item.done), [visibleItems])
       const doneItems = useMemo(() => visibleItems.filter((item) => item.done), [visibleItems])
       const scopeCounts = useMemo(() => {
@@ -836,6 +900,72 @@ window.__ModuleLoader__.load({
           await loadTodos(true)
         } catch (failure) {
           setError(messageOf(failure))
+        }
+      }
+
+      /** Add straight from the list, inheriting the scope being viewed. */
+      const quickAdd = async () => {
+        const title = quickText.trim()
+        if (!title) return
+        try {
+          await call('todos.add', { title, category: scope === 'life' ? 'life' : 'work' })
+          setQuickText('')
+          await loadTodos(true)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
+      const startEdit = (item) => {
+        setEditingId(item.id)
+        setEditText(item.title)
+      }
+
+      const saveEdit = async (item) => {
+        const title = editText.trim()
+        setEditingId('')
+        if (!title || title === item.title) return
+        try {
+          await call('todos.update', { id: item.id, patch: { title } })
+          await loadTodos(true)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
+      const saveDue = async (item, value) => {
+        setDueEditingId('')
+        if ((value || '') === (item.due || '')) return
+        try {
+          await call('todos.update', { id: item.id, patch: { due: value || '' } })
+          await loadTodos(true)
+        } catch (failure) {
+          setError(messageOf(failure))
+        }
+      }
+
+      /** Hide at once, delete for real after five seconds unless undone. */
+      const requestDelete = (item) => {
+        setItems((current) => current.filter((entry) => entry.id !== item.id))
+        setUndoItem(item)
+        if (undoTimer.current) window.clearTimeout(undoTimer.current)
+        undoTimer.current = window.setTimeout(async () => {
+          setUndoItem(null)
+          try {
+            await call('todos.remove', { id: item.id })
+          } catch {
+            // already gone
+          }
+        }, 5000)
+      }
+
+      const undoDelete = () => {
+        if (undoTimer.current) window.clearTimeout(undoTimer.current)
+        const item = undoItem
+        setUndoItem(null)
+        if (item) {
+          setItems((current) => [item, ...current])
+          loadTodos(true)
         }
       }
 
@@ -940,8 +1070,17 @@ window.__ModuleLoader__.load({
           item,
           t,
           index: orderIndex.get(item.id) || 0,
+          editing: editingId === item.id,
+          editText,
+          dueEditing: dueEditingId === item.id,
           onToggle: toggleTodo,
-          onRemove: removeTodo,
+          onRemove: requestDelete,
+          onStartEdit: startEdit,
+          onEditChange: setEditText,
+          onSaveEdit: saveEdit,
+          onCancelEdit: () => setEditingId(''),
+          onStartDue: (entry) => setDueEditingId(entry.id),
+          onSaveDue: saveDue,
           onPortal: openPortalFor,
           onOpenConversation: openConversationFor,
         })
@@ -1037,6 +1176,48 @@ window.__ModuleLoader__.load({
               { className: 'dsh-tf-pane' },
               h(
                 'div',
+                { className: 'dsh-tf-quick' },
+                h('input', {
+                  className: 'dsh-tf-quickinput',
+                  value: quickText,
+                  placeholder: t('quick.placeholder'),
+                  onChange: (event) => setQuickText(event.target.value),
+                  onKeyDown: (event) => {
+                    if (event.key === 'Enter') quickAdd()
+                  },
+                }),
+                h('button', { type: 'button', className: 'dsh-tf-btn is-solid', onClick: quickAdd }, t('quick.add')),
+              ),
+              h(
+                'div',
+                { className: 'dsh-tf-tools' },
+                h('input', {
+                  className: 'dsh-tf-search',
+                  value: query,
+                  placeholder: t('search.placeholder'),
+                  onChange: (event) => setQuery(event.target.value),
+                }),
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: `dsh-tf-quickfilter${quick === 'today' ? ' is-on' : ''}`,
+                    onClick: () => setQuick(quick === 'today' ? 'all' : 'today'),
+                  },
+                  t('filter.today'),
+                ),
+                h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: `dsh-tf-quickfilter${quick === 'overdue' ? ' is-on' : ''}`,
+                    onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue'),
+                  },
+                  t('filter.overdue'),
+                ),
+              ),
+              h(
+                'div',
                 { className: 'dsh-tf-filters', role: 'group', 'aria-label': t('panel.title') },
                 scopeButton('all', t('filter.all'), scopeCounts.all),
                 scopeButton('work', t('filter.work'), scopeCounts.work),
@@ -1052,6 +1233,14 @@ window.__ModuleLoader__.load({
                 : notice
                   ? h('div', { className: 'dsh-tf-notice' }, notice)
                   : null,
+              undoItem
+                ? h(
+                    'div',
+                    { className: 'dsh-tf-undo' },
+                    h('span', { style: { flex: 1 } }, `已删除：${undoItem.title}`),
+                    h('button', { type: 'button', className: 'dsh-tf-btn', style: { color: 'inherit', borderColor: 'currentColor' }, onClick: undoDelete }, '撤销'),
+                  )
+                : null,
               h(
                 'div',
                 { className: 'dsh-tf-list', onClick: refreshAfterClick },

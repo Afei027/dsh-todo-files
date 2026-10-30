@@ -675,6 +675,8 @@ export function apply(ctx, rawConfig) {
       if (!manager || typeof manager.installBundle !== 'function') throw fail('这个版本的 DSH 不支持插件自更新', 501)
       const result = await manager.installBundle(REPO_SPEC, { enabled: true })
       updateCache.at = 0
+      updateCache.value = null
+      install.resolved = false
       return {
         application: result && result.application,
         version: result && result.version,

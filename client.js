@@ -222,7 +222,14 @@ window.__ModuleLoader__.load({
 .dsh-tf-child .dsh-tf-row { font-size: 14px; }
 .dsh-tf-childadd { padding: 2px 0 4px 26px; }
 .dsh-tf-toolbar { display: flex; align-items: center; gap: 6px; margin-bottom: 8px; }
+.dsh-tf-group { display: inline-flex; align-items: center; gap: 2px; margin-left: 2px; padding-left: 8px; border-left: 1px solid var(--dsw-alias-border-l1); flex: none; }
 .dsh-tf-searchbtn { flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 14px; line-height: 1; cursor: pointer; transition: background .15s ease, color .15s ease; }
+.dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
+.dsh-tf-searchbtn { margin-left: auto; }
+.dsh-tf-trashbtn { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12.5px; cursor: pointer; }
+.dsh-tf-trashbtn:hover { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); }
+.dsh-tf-trashbtn.is-on { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent); }
+.dsh-tf-trashbtn-count { font-variant-numeric: tabular-nums; font-weight: 600; }
 .dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-toolbar .dsh-tf-search { flex: 1; min-width: 0; height: 30px; padding: 0 10px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: var(--dsw-alias-bg-layer-2); color: inherit; font: inherit; font-size: 13px; outline: none; transition: border-color .18s ease, background .18s ease; }
 .dsh-tf-toolbar .dsh-tf-search:focus { border-color: var(--dsw-tf-work); background: var(--dsw-alias-bg-base); }
@@ -861,6 +868,7 @@ window.__ModuleLoader__.load({
       const t = useTranslate(i18n)
       const bridge = props.bridge
       const [items, setItems] = useState([])
+      const [trashCount, setTrashCount] = useState(0)
       const [busy, setBusy] = useState(true)
       const [error, setError] = useState('')
       const [notice, setNotice] = useState('')
@@ -874,6 +882,7 @@ window.__ModuleLoader__.load({
         try {
           const value = await call('todos.list', {})
           setItems(Array.isArray(value.items) ? value.items : [])
+          setTrashCount(Number(value.trashCount) || 0)
           setError('')
         } catch (failure) {
           if (!silent) setError(messageOf(failure))
@@ -1301,15 +1310,6 @@ window.__ModuleLoader__.load({
           { className: 'dsh-tf-foot' },
           h(
             'div',
-            { className: 'dsh-tf-datarow' },
-            h(
-              'button',
-              { type: 'button', className: 'dsh-tf-linkbtn', onClick: toggleTrash },
-              showTrash ? '关闭回收站' : '回收站',
-            ),
-          ),
-          h(
-            'div',
             { className: 'dsh-tf-composer' },
             h('textarea', {
               className: 'dsh-tf-say',
@@ -1368,6 +1368,20 @@ window.__ModuleLoader__.load({
                 return h('span', { className: 'dsh-tf-sub' }, parts.join(' · '))
               })(),
             ),
+            trashCount > 0
+              ? h(
+                  'button',
+                  {
+                    type: 'button',
+                    className: `dsh-tf-trashbtn${showTrash ? ' is-on' : ''}`,
+                    title: `回收站 · ${trashCount} 条`,
+                    'aria-label': `回收站 · ${trashCount} 条`,
+                    onClick: toggleTrash,
+                  },
+                  '🗑',
+                  h('span', { className: 'dsh-tf-trashbtn-count' }, trashCount),
+                )
+              : null,
             h(
               'button',
               {
@@ -1397,14 +1411,18 @@ window.__ModuleLoader__.load({
                   scopeButton('life', '生活', scopeCounts.life),
                 ),
                 h(
-                  'button',
-                  { type: 'button', className: `dsh-tf-chip${quick === 'today' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'today' ? 'all' : 'today') },
-                  '今天',
-                ),
-                h(
-                  'button',
-                  { type: 'button', className: `dsh-tf-chip${quick === 'overdue' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue') },
-                  '逾期',
+                  'div',
+                  { className: 'dsh-tf-group' },
+                  h(
+                    'button',
+                    { type: 'button', className: `dsh-tf-chip${quick === 'today' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'today' ? 'all' : 'today') },
+                    '今天',
+                  ),
+                  h(
+                    'button',
+                    { type: 'button', className: `dsh-tf-chip${quick === 'overdue' ? ' is-on' : ''}`, onClick: () => setQuick(quick === 'overdue' ? 'all' : 'overdue') },
+                    '逾期',
+                  ),
                 ),
                 searchOpen
                   ? h('input', {

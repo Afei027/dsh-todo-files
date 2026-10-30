@@ -325,7 +325,10 @@ export function apply(ctx, rawConfig) {
     /** @returns every todo in display order. */
     async 'todos.list'() {
       await loadState()
-      return { items: state.items.map((item) => ({ ...item })) }
+      return {
+        items: state.items.map((item) => ({ ...item })),
+        trashCount: Array.isArray(state.trash) ? state.trash.length : 0,
+      }
     },
 
     /**

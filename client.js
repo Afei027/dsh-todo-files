@@ -192,6 +192,89 @@ window.__ModuleLoader__.load({
 .dsh-tf-chevron { display: inline-block; font-size: 11px; transition: transform .15s ease; }
 .dsh-tf-chevron.is-open { transform: rotate(90deg); }
 .dsh-tf-sec-action { margin-left: auto; }
+/* ---------- pixel corgi ---------- */
+.dsh-tf-root { position: relative; }
+.dsh-tf-pet {
+  position: absolute; right: 14px; bottom: 108px; z-index: 6;
+  display: flex; align-items: flex-end; gap: 6px; pointer-events: none;
+}
+.dsh-tf-pet-stage { position: relative; pointer-events: auto; }
+.dsh-tf-pet-body {
+  padding: 0; border: 0; background: none; cursor: pointer; display: block;
+  transform-origin: bottom center; animation: dsh-tf-breathe 3.1s ease-in-out infinite;
+  filter: drop-shadow(0 8px 12px rgba(15, 23, 42, .16));
+}
+.dsh-tf-pet-body:active { transform: scale(.95) translateY(1px); }
+.dsh-tf-pet-body.is-happy { animation: dsh-tf-hop .45s ease-out; }
+@keyframes dsh-tf-breathe {
+  0%, 100% { transform: translateY(0) scaleY(1); }
+  50% { transform: translateY(-2px) scaleY(1.03); }
+}
+@keyframes dsh-tf-hop {
+  0% { transform: translateY(0) scale(1); }
+  40% { transform: translateY(-10px) scale(1.06); }
+  100% { transform: translateY(0) scale(1); }
+}
+.dsh-tf-pet-bubble {
+  pointer-events: auto; position: absolute; right: 0; bottom: 100%; margin-bottom: 46px; max-width: 190px;
+  background: #fff; color: var(--dsw-alias-label-primary, #1f2328);
+  border: 1px solid #e6e8ec; border-radius: 14px; padding: 9px 12px;
+  font-size: 13px; line-height: 1.55; letter-spacing: .01em;
+  box-shadow: 0 10px 24px rgba(15, 23, 42, .12);
+  animation: dsh-tf-bubble-in .22s ease-out;
+}
+.dsh-tf-pet-bubble:after {
+  content: ''; position: absolute; left: 22px; bottom: -6px; width: 11px; height: 11px;
+  background: #fff; border-right: 1px solid #e6e8ec; border-bottom: 1px solid #e6e8ec;
+  transform: rotate(45deg);
+}
+@keyframes dsh-tf-bubble-in {
+  from { opacity: 0; transform: translateY(4px) scale(.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+.dsh-tf-pet-actions {
+  position: absolute; right: 0; bottom: 100%; margin-bottom: 8px; display: flex; gap: 6px; pointer-events: auto;
+  opacity: 0; transition: opacity .15s ease; white-space: nowrap;
+}
+.dsh-tf-pet:hover .dsh-tf-pet-actions,
+.dsh-tf-pet-actions:focus-within,
+.dsh-tf-pet.is-teaching .dsh-tf-pet-actions { opacity: 1; }
+.dsh-tf-pet-btn {
+  display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 9px; white-space: nowrap; flex: none;
+  border: 1px solid #e2e3e7; border-radius: 9px; background: #fff; cursor: pointer;
+  font-size: 12px; color: var(--dsw-alias-label-primary, #1f2328);
+  box-shadow: 0 2px 6px rgba(15, 23, 42, .06); transition: transform .12s ease, border-color .12s ease;
+}
+.dsh-tf-pet-btn:hover { transform: translateY(-1px); border-color: #d0d3d9; }
+.dsh-tf-pet-btn:active { transform: scale(.96); }
+.dsh-tf-pet-btn-num { font-size: 11px; color: #8a8f98; }
+.dsh-tf-pet-meta {
+  position: absolute; right: 0; bottom: -12px; display: flex; gap: 4px; align-items: center;
+  pointer-events: auto; white-space: nowrap;
+}
+.dsh-tf-pet-level {
+  font-size: 10px; font-weight: 600; color: #8a8f98; letter-spacing: .02em;
+}
+.dsh-tf-pet-badge {
+  height: 16px; padding: 0 5px; border-radius: 5px; font-size: 10px; line-height: 16px;
+  background: #fff4e0; color: #a86b12; border: 1px solid #f3dcb4; white-space: nowrap;
+}
+.dsh-tf-pet-badge.is-new { animation: dsh-tf-badge-pop .5s ease-out; }
+@keyframes dsh-tf-badge-pop {
+  0% { transform: scale(.6); opacity: 0; }
+  60% { transform: scale(1.12); }
+  100% { transform: scale(1); opacity: 1; }
+}
+.dsh-tf-pet-hearts { position: absolute; right: 26px; bottom: 40px; pointer-events: none; }
+.dsh-tf-pet-hearts i {
+  position: absolute; right: 0; bottom: 0; opacity: 0;
+  animation: dsh-tf-heart 1.5s ease-out forwards;
+}
+@keyframes dsh-tf-heart {
+  0% { transform: translate(0, 0) scale(.7); opacity: 0; }
+  18% { opacity: 1; }
+  100% { transform: translate(var(--dx, -6px), -52px) scale(1.1); opacity: 0; }
+}
 .dsh-tf-row {
   display: flex; align-items: flex-start; gap: 10px; padding: 7px 10px; min-height: 36px;
   border-radius: 8px; transition: background .12s ease;
@@ -236,10 +319,11 @@ window.__ModuleLoader__.load({
 .dsh-tf-searchbtn { flex: none; display: grid; place-items: center; width: 30px; height: 30px; padding: 0; border-radius: 8px; border: 0; background: transparent; color: var(--dsw-alias-label-secondary); font-size: 14px; line-height: 1; cursor: pointer; transition: background .15s ease, color .15s ease; }
 .dsh-tf-searchbtn:hover { background: var(--dsw-alias-bg-layer-2); color: var(--dsw-alias-label-primary); }
 .dsh-tf-searchbtn { margin-left: auto; }
-.dsh-tf-trashbtn { display: inline-flex; align-items: center; gap: 4px; height: 26px; padding: 0 8px; border-radius: 8px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 12.5px; cursor: pointer; }
+.dsh-tf-trashbtn { display: inline-flex; align-items: center; gap: 7px; height: 34px; padding: 0 13px; margin-left: auto; border-radius: 10px; border: 1px solid var(--dsw-alias-border-l1); background: transparent; color: var(--dsw-alias-label-secondary); font: inherit; font-size: 14px; cursor: pointer; transition: border-color .12s ease, color .12s ease; }
 .dsh-tf-trashbtn:hover { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); }
 .dsh-tf-trashbtn.is-on { border-color: var(--dsw-alias-state-error-primary); color: var(--dsw-alias-state-error-primary); background: color-mix(in srgb, var(--dsw-alias-state-error-primary) 8%, transparent); }
-.dsh-tf-trashbtn-count { font-variant-numeric: tabular-nums; font-weight: 600; }
+.dsh-tf-trashbtn-count { font-variant-numeric: tabular-nums; font-weight: 600; font-size: 14px; }
+.dsh-tf-trashbtn svg { display: block; }
 .dsh-tf-updatebtn { display: inline-flex; align-items: center; gap: 4px; height: 22px; padding: 0 9px; border-radius: 999px; border: 1px solid var(--dsw-tf-work); background: transparent; color: var(--dsw-tf-work); font: inherit; font-size: 12px; font-weight: 600; line-height: 1; cursor: pointer; transition: background .15s ease; }
 .dsh-tf-updatebtn:hover { background: color-mix(in srgb, var(--dsw-tf-work) 12%, transparent); }
 .dsh-tf-updatebtn:disabled { opacity: .7; cursor: default; }
@@ -532,7 +616,21 @@ window.__ModuleLoader__.load({
      */
     function createBridge(ctx, i18n) {
       let lastSessionId = null
-      const service = (name) => (typeof ctx.get === 'function' ? ctx.get(name) : undefined)
+      // The panel's own inject list only declares 'slots', so a plain ctx.get() cannot see
+      // sessions/uiWorkspace. Late-inject them here: the bridge degrades to "unavailable"
+      // if the harness ever stops offering them, but sending works whenever they exist.
+      let late = {}
+      try {
+        ctx.inject(['sessions', 'uiWorkspace'], (inner) => {
+          late = { sessions: inner.sessions, uiWorkspace: inner.uiWorkspace }
+        })
+      } catch {
+        // an environment without late injection keeps the ctx.get() path below
+      }
+      const service = (name) => {
+        if (late && late[name]) return late[name]
+        return typeof ctx.get === 'function' ? ctx.get(name) : undefined
+      }
       return {
         remember(sessionId) {
           if (typeof sessionId === 'string' && sessionId) lastSessionId = sessionId
@@ -546,7 +644,14 @@ window.__ModuleLoader__.load({
             try {
               const reference = sessions.retain(lastSessionId, { source: 'controllerOperation' })
               try {
-                const binding = await reference.ready
+                // A stale Session id can leave the open attempt pending forever, which used to
+                // freeze the composer on "sending" for the rest of the page life. Bound it.
+                const binding = await Promise.race([
+                  reference.ready,
+                  new Promise((_, reject) => {
+                    window.setTimeout(() => reject(new Error(i18n.t('say.unavailable'))), 8000)
+                  }),
+                ])
                 const result = await binding.session.prompt([{ type: 'text', text }], 'queue')
                 if (result && result.ok === false) {
                   const reason = result.error && result.error.message ? result.error.message : ''
@@ -1008,6 +1113,18 @@ window.__ModuleLoader__.load({
         date.setHours(0, 0, 0, 0)
         return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`
       }, [])
+      // Monday..Sunday of the current week, as YYYY-MM-DD keys.
+      const weekRange = useMemo(() => {
+        const base = new Date()
+        base.setHours(0, 0, 0, 0)
+        const mondayOffset = (base.getDay() + 6) % 7
+        const monday = new Date(base)
+        monday.setDate(base.getDate() - mondayOffset)
+        const sunday = new Date(monday)
+        sunday.setDate(monday.getDate() + 6)
+        const key = (d) => d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0")
+        return { start: key(monday), end: key(sunday) }
+      }, [])
       const visibleItems = useMemo(() => {
         const needle = query.trim().toLowerCase()
         return items
@@ -1017,13 +1134,14 @@ window.__ModuleLoader__.load({
           .filter((item) => {
             if (quick === 'today') return item.due === todayKey && !item.done
             if (quick === 'overdue') return Boolean(item.due) && item.due < todayKey && !item.done
+            if (quick === 'week') return Boolean(item.due) && item.due >= weekRange.start && item.due <= weekRange.end
             return true
           })
-      }, [items, scope, query, quick, todayKey, tagFilter])
+      }, [items, scope, query, quick, todayKey, tagFilter, weekRange])
       const openItems = useMemo(() => visibleItems.filter((item) => !item.done), [visibleItems])
       const doneItems = useMemo(() => visibleItems.filter((item) => item.done), [visibleItems])
       const scopeCounts = useMemo(() => {
-        const open = items.filter((item) => !item.done)
+        const open = items.filter((item) => !item.done && !item.parentId)
         const work = open.filter((item) => item.category !== 'life').length
         return { all: open.length, work, life: open.length - work }
       }, [items])
@@ -1341,12 +1459,12 @@ window.__ModuleLoader__.load({
         )
       }
 
-      const row = (item) =>
+      const row = (item, displayIndex) =>
         h(TodoRow, {
           key: item.id,
           item,
           t,
-          index: orderIndex.get(item.id) || 0,
+          index: typeof displayIndex === 'number' ? displayIndex : (orderIndex.get(item.id) || 0),
           editing: editingId === item.id,
           editText,
           dueEditing: dueEditingId === item.id,
@@ -1384,6 +1502,455 @@ window.__ModuleLoader__.load({
           count > 0 ? h('span', { className: 'dsh-tf-filter-count' }, count) : null,
         )
 
+      // ------------------------------------------------------------ pet
+      // A corgi lives in the panel. Frames are character grids (one char per pixel) so the
+      // sprite stays crisp at any integer scale without shipping images.
+      const PET_W = 44
+      const PET_H = 40
+      const PET_PALETTE = {
+        '1': '#6B3F14', '2': '#F2A93B', '3': '#D98A28', '4': '#FFCB6B', '5': '#FFFDF7',
+        '6': '#EFE4CE', '7': '#F2A0A0', '8': '#2A2118', '9': '#F7B0A8',
+      }
+      const PET_FRAMES = {
+        idle: [
+          "...........121................121...........",
+          "..........12221..............12221..........",
+          "..........12221......1.......12221..........",
+          ".........122722111111211111.1227221.........",
+          ".........12777212222222222211277721.........",
+          "........1227722222222222222222777221........",
+          "........1277222222222222222222277721........",
+          ".......122222244444442222222222222221.......",
+          ".......122224444444444422222222222221.......",
+          "......13322444444444444422222222223331......",
+          "......13224444444444444442222222222331......",
+          ".......122244444444444442222222222231.......",
+          ".......122224888444444422228882222231.......",
+          ".......122228588844442222285888222231.......",
+          "......1222228888822255522288888222221.......",
+          ".......1222288888555555555888882222331......",
+          ".......122222888555558555558882222231.......",
+          ".......122222255555888885555522222231.......",
+          "......1999222255555888885555522229991.......",
+          ".....199999222555585585585555222999991......",
+          "......1999222655555888885555562229991.......",
+          ".......11112225555555555555552223311........",
+          "...........12255555555555555522331..........",
+          "............122555555555555522331...........",
+          ".............1336555555555633331............",
+          "............1222236666666333221.............",
+          "...........122222222223222222221............",
+          "..........122222222225222222222211111.......",
+          "..........1222222255555552222222322221......",
+          "..........12222225555555552222223222221.....",
+          ".........1222222555555555552222222222231....",
+          "..........1222225555555555522222332222331...",
+          "..........122225555555555555222232222331....",
+          "..........12222255555555555222223333331.....",
+          "...........122225555555555522223311311......",
+          "..........15555555555555555555551..1........",
+          "..........15555555555555555555551...........",
+          ".........1655555556225226555555561..........",
+          "..........15555555333233355555551...........",
+          "...........166666111113111666661............",
+        ],
+        blink: [
+          "...........121................121...........",
+          "..........12221..............12221..........",
+          "..........12221......1.......12221..........",
+          ".........122722111111211111.1227221.........",
+          ".........12777212222222222211277721.........",
+          "........1227722222222222222222777221........",
+          "........1277222222222222222222277721........",
+          ".......122222244444442222222222222221.......",
+          ".......122224444444444422222222222221.......",
+          "......13322444444444444422222222223331......",
+          "......13224444444444444442222222222331......",
+          ".......122244444444444442222222222231.......",
+          ".......122224444444444422222222222231.......",
+          ".......122222244444442222222222222231.......",
+          "......1222228888822255522288888222221.......",
+          ".......1222222222555555555222222222331......",
+          ".......122222225555558555555222222231.......",
+          ".......122222255555888885555522222231.......",
+          "......1999222255555888885555522229991.......",
+          ".....199999222555585585585555222999991......",
+          "......1999222655555888885555562229991.......",
+          ".......11112225555555555555552223311........",
+          "...........12255555555555555522331..........",
+          "............122555555555555522331...........",
+          ".............1336555555555633331............",
+          "............1222236666666333221.............",
+          "...........122222222223222222221............",
+          "..........122222222225222222222211111.......",
+          "..........1222222255555552222222322221......",
+          "..........12222225555555552222223222221.....",
+          ".........1222222555555555552222222222231....",
+          "..........1222225555555555522222332222331...",
+          "..........122225555555555555222232222331....",
+          "..........12222255555555555222223333331.....",
+          "...........122225555555555522223311311......",
+          "..........15555555555555555555551..1........",
+          "..........15555555555555555555551...........",
+          ".........1655555556225226555555561..........",
+          "..........15555555333233355555551...........",
+          "...........166666111113111666661............",
+        ],
+        happy: [
+          "...........121................121...........",
+          "..........12221..............12221..........",
+          "..........12221......1.......12221..........",
+          ".........122722111111211111.1227221.........",
+          ".........12777212222222222211277721.........",
+          "........1227722222222222222222777221........",
+          "........1277222222222222222222277721........",
+          ".......122222244444442222222222222221.......",
+          ".......122224444444444422222222222221.......",
+          "......13322444444444444422222222223331......",
+          "......13224444444444444442222222222331......",
+          ".......122244444444444442222222222231.......",
+          ".......122224444444444422222222222231.......",
+          ".......122228284444442222282822222231.......",
+          "......1222222822222255522228222222221.......",
+          ".......1222282822555555555828222222331......",
+          ".......122222225555558555555222222231.......",
+          ".......122222255555888885555522222231.......",
+          "......1999222255555888885555522229991.......",
+          ".....199999222555558888855555222999991......",
+          "......1999222655555877785555562229991.......",
+          ".......11112225555577777555552223311........",
+          "...........12255555877785555522331..........",
+          "............122555555555555522331...........",
+          ".............1336555555555633331............",
+          "............1222236666666333221.............",
+          "...........122222222223222222221............",
+          "..........122222222225222222222211111.......",
+          "..........1222222255555552222222322221......",
+          "..........12222225555555552222223222221.....",
+          ".........1222222555555555552222222222231....",
+          "..........1222225555555555522222332222331...",
+          "..........122225555555555555222232222331....",
+          "..........12222255555555555222223333331.....",
+          "...........122225555555555522223311311......",
+          "..........15555555555555555555551..1........",
+          "..........15555555555555555555551...........",
+          ".........1655555556225226555555561..........",
+          "..........15555555333233355555551...........",
+          "...........166666111113111666661............",
+        ],
+      }
+
+      function PetSprite(props) {
+        const rows = PET_FRAMES[props.frame] || PET_FRAMES.idle
+        const px = props.size || 3
+        const paths = {}
+        rows.forEach((row, y) => {
+          let x = 0
+          while (x < row.length) {
+            const ch = row[x]
+            if (ch === '.') { x += 1; continue }
+            let end = x
+            while (end + 1 < row.length && row[end + 1] === ch) end += 1
+            const w = end - x + 1
+            paths[ch] = (paths[ch] || '') + `M${x} ${y}h${w}v1h-${w}z`
+            x = end + 1
+          }
+        })
+        const rects = Object.keys(paths).map((ch) =>
+          React.createElement('path', { key: ch, fill: PET_PALETTE[ch] || '#F2A93B', d: paths[ch] }),
+        )
+        return React.createElement(
+          'svg',
+          {
+            viewBox: `0 0 ${PET_W} ${PET_H}`,
+            width: PET_W * px,
+            height: PET_H * px,
+            shapeRendering: 'crispEdges',
+            style: { display: 'block' },
+            'aria-hidden': true,
+          },
+          rects,
+        )
+      }
+
+      function PetHeart(props) {
+        return React.createElement(
+          'svg',
+          { viewBox: '0 0 10 9', width: 12, height: 11, style: props.style },
+          React.createElement('path', {
+            fill: props.color || '#F87171',
+            d: 'M5 9 1.2 5.4A2.6 2.6 0 0 1 5 1.7a2.6 2.6 0 0 1 3.8 3.7z',
+          }),
+        )
+      }
+
+      /**
+       * The corgi: breathes, blinks, reacts to a pet or a like, and says something useful now
+       * and then. Affection and likes persist in this browser so the pet remembers you.
+       * @param props - `{ open, overdue }` counts taken from the live list.
+       */
+      // Affection and progress live in this browser; nothing is sent anywhere.
+      const PET_STORE = 'dsh-tf-pet-v3'
+      const PET_BADGES = [
+        { id: 'first', label: '第一条', need: (s) => s.completed >= 1 },
+        { id: 'five', label: '5 条', need: (s) => s.completed >= 5 },
+        { id: 'twenty', label: '20 条', need: (s) => s.completed >= 20 },
+        { id: 'fifty', label: '50 条', need: (s) => s.completed >= 50 },
+        { id: 'streak3', label: '连打 3 天', need: (s) => s.streak >= 3 },
+        { id: 'streak7', label: '连打 7 天', need: (s) => s.streak >= 7 },
+        { id: 'liked10', label: '被喜欢 10 次', need: (s) => s.likes >= 10 },
+      ]
+
+      const petDayKey = () => {
+        const d = new Date()
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      }
+      const petYesterdayKey = () => {
+        const d = new Date()
+        d.setDate(d.getDate() - 1)
+        return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+      }
+
+      /**
+       * The corgi: grows with the todos you finish, unlocks badges at milestones, and reacts to a
+       * pet or a like. Deliberately has no energy meter — the plugin should never make you feel
+       * behind for not playing with it.
+       * @param props - `{ items }`: the full list, used to count completions as they happen.
+       */
+      function PetDock(props) {
+        const items = props.items || []
+        // Count only top-level rows: subtasks live under their parent and must not inflate the
+        // number the pet announces, or it disagrees with what the list shows.
+        const open = items.filter((item) => !item.done && !item.parentId).length
+        const today = petDayKey()
+        const overdue = items.filter((item) => !item.done && !item.parentId && item.due && item.due < today).length
+
+        const readStore = () => {
+          const fallback = { pats: 0, likes: 0, completed: 0, streak: 0, lastDay: '', seenDone: [], seeded: false, taught: false }
+          try {
+            const raw = window.localStorage.getItem(PET_STORE)
+            if (!raw) return fallback
+            const parsed = JSON.parse(raw) || {}
+            return {
+              pats: Number(parsed.pats) || 0,
+              likes: Number(parsed.likes) || 0,
+              completed: Number(parsed.completed) || 0,
+              streak: Number(parsed.streak) || 0,
+              lastDay: typeof parsed.lastDay === 'string' ? parsed.lastDay : '',
+              seenDone: Array.isArray(parsed.seenDone) ? parsed.seenDone.slice(-400) : [],
+              seeded: Boolean(parsed.seeded) || (Array.isArray(parsed.seenDone) && parsed.seenDone.length > 0),
+              taught: Boolean(parsed.taught),
+            }
+          } catch {
+            return fallback
+          }
+        }
+        const [stats, setStats] = useState(readStore)
+        const [frame, setFrame] = useState('idle')
+        const [say, setSay] = useState('')
+        const [hearts, setHearts] = useState([])
+        const [freshBadge, setFreshBadge] = useState('')
+        const [teaching, setTeaching] = useState(false)
+        const [narrow, setNarrow] = useState(false)
+        const petRef = useRef(null)
+
+        const save = (next) => {
+          setStats(next)
+          try {
+            window.localStorage.setItem(PET_STORE, JSON.stringify(next))
+          } catch {
+            // blocked storage keeps progress for this page only
+          }
+        }
+
+        // count todos that turn done while this panel is open
+        useEffect(() => {
+          const doneIds = items.filter((item) => item.done && item.id).map((item) => item.id)
+          if (!doneIds.length) return
+          setStats((current) => {
+            // First run: the rows already done are history, not work finished just now.
+            if (!current.seeded) {
+              const seeded = { ...current, seeded: true, seenDone: doneIds.slice(-400) }
+              try {
+                window.localStorage.setItem(PET_STORE, JSON.stringify(seeded))
+              } catch {
+                // ignore
+              }
+              return seeded
+            }
+            const seen = new Set(current.seenDone)
+            const added = doneIds.filter((id) => !seen.has(id))
+            if (!added.length) return current
+            const day = today
+            const streak = current.lastDay === day ? current.streak : current.lastDay === petYesterdayKey() ? current.streak + 1 : 1
+            const next = {
+              ...current,
+              completed: current.completed + added.length,
+              streak,
+              lastDay: day,
+              seenDone: current.seenDone.concat(added).slice(-400),
+            }
+            try {
+              window.localStorage.setItem(PET_STORE, JSON.stringify(next))
+            } catch {
+              // ignore
+            }
+            return next
+          })
+        }, [items])
+
+        const unlocked = PET_BADGES.filter((badge) => badge.need(stats))
+        const level = 1 + Math.min(9, Math.floor(stats.completed / 5))
+        // Stay small on purpose: a mascot that covers the list is worse than no mascot.
+        const size = narrow ? 2 : stats.completed >= 10 ? 3 : 2
+
+        const lines = () => {
+          const out = []
+          if (open === 0) out.push('都清完了，我去睡一会儿')
+          if (open > 0) out.push(`还有 ${open} 条没做完，慢慢来`)
+          if (overdue > 0) out.push(`有 ${overdue} 条逾期了，先挑一条处理吧`)
+          if (open > 3) out.push(`${open} 条有点多，挑最小的那条先做`)
+          if (stats.completed > 0) out.push(`你已经完成 ${stats.completed} 条了`)
+          out.push('摸摸头，今天也辛苦了')
+          return out
+        }
+        const speak = (text) => setSay(text)
+        const burst = () => {
+          const id = Date.now()
+          setHearts((list) => list.concat([{ id, dx: -8 + Math.random() * 18 }]))
+          window.setTimeout(() => setHearts((list) => list.filter((h) => h.id !== id)), 1500)
+        }
+        const celebrate = () => {
+          const before = new Set(unlocked.map((b) => b.id))
+          const next = PET_BADGES.find((badge) => !before.has(badge.id) && badge.need(stats))
+          if (next) {
+            setFreshBadge(next.id)
+            speak(`解锁成就：${next.label}`)
+            window.setTimeout(() => setFreshBadge(''), 2200)
+          }
+        }
+        const pat = () => {
+          save({ ...stats, pats: stats.pats + 1 })
+          setFrame('happy')
+          burst()
+          speak(lines()[(stats.pats + 1) % lines().length])
+          window.setTimeout(() => setFrame('idle'), 1400)
+        }
+        const like = () => {
+          save({ ...stats, likes: stats.likes + 1 })
+          setFrame('happy')
+          burst()
+          speak('谢谢你，我今天心情很好')
+          window.setTimeout(() => setFrame('idle'), 1400)
+        }
+
+        useEffect(() => {
+          celebrate()
+        }, [stats.completed, stats.streak, stats.likes])
+
+        // Show the two buttons once, so they are discoverable without hovering.
+        useEffect(() => {
+          if (stats.taught) return
+          setTeaching(true)
+          save({ ...stats, taught: true })
+          const stop = window.setTimeout(() => setTeaching(false), 5000)
+          return () => window.clearTimeout(stop)
+        }, [])
+
+        // A narrow panel gets the small sprite so the list keeps its room.
+        useEffect(() => {
+          const el = petRef.current
+          const root = el && el.closest ? el.closest('.dsh-tf-root') : null
+          if (!root) return undefined
+          const measure = () => setNarrow(root.clientWidth < 700)
+          measure()
+          if (typeof ResizeObserver === 'function') {
+            const observer = new ResizeObserver(measure)
+            observer.observe(root)
+            return () => observer.disconnect()
+          }
+          window.addEventListener('resize', measure)
+          return () => window.removeEventListener('resize', measure)
+        }, [])
+
+        useEffect(() => {
+          const first = window.setTimeout(() => speak(lines()[0]), 2400)
+          const blinkTimer = window.setInterval(() => {
+            setFrame((current) => (current === 'happy' ? current : 'blink'))
+            window.setTimeout(() => setFrame((current) => (current === 'happy' ? current : 'idle')), 160)
+          }, 4200)
+          const quiet = window.setInterval(() => setSay(''), 11000)
+          return () => {
+            window.clearTimeout(first)
+            window.clearInterval(blinkTimer)
+            window.clearInterval(quiet)
+          }
+        }, [])
+
+        return React.createElement(
+          'div',
+          { className: `dsh-tf-pet${teaching ? ' is-teaching' : ''}`, ref: petRef },
+          say ? React.createElement('div', { className: 'dsh-tf-pet-bubble' }, say) : null,
+          React.createElement(
+            'div',
+            { className: 'dsh-tf-pet-stage' },
+            React.createElement(
+              'div',
+              { className: 'dsh-tf-pet-hearts' },
+              hearts.map((h) =>
+                React.createElement(PetHeart, { key: h.id, style: { '--dx': `${h.dx}px` } }),
+              ),
+            ),
+            React.createElement(
+              'button',
+              {
+                type: 'button',
+                className: `dsh-tf-pet-body${frame === 'happy' ? ' is-happy' : ''}` ,
+                title: `Lv.${level} · 已完成 ${stats.completed} 条 · 摸过 ${stats.pats} 次` ,
+                'aria-label': '摸摸柯基',
+                onClick: pat,
+              },
+              React.createElement(PetSprite, { frame, size }),
+            ),
+            React.createElement(
+              'div',
+              { className: 'dsh-tf-pet-meta' },
+              React.createElement('span', { className: 'dsh-tf-pet-level' }, `Lv.${level}`),
+              unlocked.slice(-1).map((badge) =>
+                React.createElement(
+                  'span',
+                  {
+                    key: badge.id,
+                    className: `dsh-tf-pet-badge${freshBadge === badge.id ? ' is-new' : ''}`,
+                    title: `成就：${badge.label}` ,
+                  },
+                  badge.label,
+                ),
+              ),
+            ),
+            React.createElement(
+              'div',
+              { className: 'dsh-tf-pet-actions' },
+              React.createElement(
+                'button',
+                { type: 'button', className: 'dsh-tf-pet-btn', onClick: pat },
+                '🖐 抚摸',
+                stats.pats > 0
+                  ? React.createElement('span', { className: 'dsh-tf-pet-btn-num' }, stats.pats)
+                  : null,
+              ),
+              React.createElement(
+                'button',
+                { type: 'button', className: 'dsh-tf-pet-btn', onClick: like },
+                '👍 喜欢',
+                stats.likes > 0
+                  ? React.createElement('span', { className: 'dsh-tf-pet-btn-num' }, stats.likes)
+                  : null,
+              ),
+            ),
+          ),
+        )
+      }
       const composer = () =>
         h(
           'div',
@@ -1423,7 +1990,9 @@ window.__ModuleLoader__.load({
           sayHint(),
         )
 
-      const openCount = openItems.length
+      // One number everywhere: a subtask is a step inside its parent, not a todo of its own.
+      const openTop = useMemo(() => openItems.filter((item) => !item.parentId), [openItems])
+      const openCount = openTop.length
 
       return h(
         React.Fragment,
@@ -1432,6 +2001,10 @@ window.__ModuleLoader__.load({
         h(
           'div',
           { className: 'dsh-tf-root' },
+          h(PetDock, {
+            key: 'pet',
+            items,
+          }),
           h(
             'header',
             { className: 'dsh-tf-head' },
@@ -1495,7 +2068,23 @@ window.__ModuleLoader__.load({
                     'aria-label': `回收站 · ${trashCount} 条`,
                     onClick: toggleTrash,
                   },
-                  '🗑',
+                  h(
+                    'svg',
+                    {
+                      width: 17,
+                      height: 17,
+                      viewBox: '0 0 16 16',
+                      fill: 'none',
+                      stroke: 'currentColor',
+                      'stroke-width': 1.6,
+                      'stroke-linecap': 'round',
+                      'stroke-linejoin': 'round',
+                      'aria-hidden': 'true',
+                    },
+                    h('path', { d: 'M2.6 4.6h10.8' }),
+                    h('path', { d: 'M6.4 4.6V3.3c0-.4.3-.7.7-.7h1.8c.4 0 .7.3.7.7v1.3' }),
+                    h('path', { d: 'M4.2 4.6l.6 8.1c.05.6.55 1.05 1.15 1.05h4.1c.6 0 1.1-.45 1.15-1.05l.6-8.1' }),
+                  ),
                   h('span', { className: 'dsh-tf-trashbtn-count' }, trashCount),
                 )
               : null,
@@ -1531,6 +2120,17 @@ window.__ModuleLoader__.load({
                 h(
                   'div',
                   { className: 'dsh-tf-group' },
+                  h(
+                    'button',
+                    {
+                      type: 'button',
+                      className: 'dsh-tf-filter' + (quick === 'week' ? ' is-active' : ''),
+                      'data-scope': 'quick',
+                      title: weekRange.start + " → " + weekRange.end,
+                      onClick: () => setQuick(quick === 'week' ? 'all' : 'week'),
+                    },
+                    '本周',
+                  ),
                   h(
                     'button',
                     { type: 'button', className: `dsh-tf-filter${quick === 'today' ? ' is-active' : ''}`, 'data-scope': 'quick', onClick: () => setQuick(quick === 'today' ? 'all' : 'today') },
@@ -1668,13 +2268,12 @@ window.__ModuleLoader__.load({
                       'section',
                       null,
                       h('h2', { className: 'dsh-tf-sec' }, t('todo.open'), h('span', { className: 'dsh-tf-sec-count' }, openItems.length)),
-                      openItems
-                        .filter((item) => !item.parentId)
-                        .map((item) =>
+                      openTop
+                        .map((item, position) =>
                           h(
                             'div',
                             { key: item.id },
-                            row(item),
+                            row(item, position + 1),
                             (items.filter((child) => child.parentId === item.id)).map((child) =>
                               h('div', { className: 'dsh-tf-child', key: child.id }, row(child)),
                             ),

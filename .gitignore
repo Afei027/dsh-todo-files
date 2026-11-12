@@ -3,3 +3,10 @@ pnpm-lock.yaml
 *.log
 .DS_Store
 Thumbs.db
+
+# 本地备份与一次性补丁脚本
+*.bak
+*.bak-*
+patch-*.cjs
+pet-*.mjs
+*-preview.mjs

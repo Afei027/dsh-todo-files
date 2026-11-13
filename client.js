@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
     /** Loopback key the host route accepts; see `PANEL_TOKEN` in the host half. */
     const PANEL_KEY = 'tf-2f7c9a1e6b8d4c05'
     /** Build marker: it rides every request so the host access log shows which panel build is live. */
-    const CLIENT_REV = '2026-11-13.1'
+    const CLIENT_REV = '2026-11-13.2'
 
     // ---------------------------------------------------------------- text
 
@@ -758,6 +758,15 @@ window.__ModuleLoader__.load({
 
         async send(text) {
           const sessions = service('sessions')
+          // The composer's sentence is always treated as a todo operation: the dedicated
+          // conversation must act on it right away instead of bouncing a question back at a
+          // panel the user is looking at, not the conversation.
+          const framed =
+            '【待办面板】下面这句来自待办面板的输入条，请直接按待办处理：' +
+            '要新增就用 personal_todos 工具立刻添加（不要反问任何确认问题，分类分不清就按 work，' +
+            '截止日期换算成 YYYY-MM-DD 写进 due，不要写进 title）；' +
+            '查询、勾完成、修改、清空等意图就按对应的 action 执行。\n' +
+            text
           // The composer addresses the dedicated todo conversation, never the conversation the
           // user happens to be in. A failure here is reported, not rerouted elsewhere.
           const dedicated = await this.ensureTodoSession()
@@ -772,7 +781,7 @@ window.__ModuleLoader__.load({
                   window.setTimeout(() => reject(new Error(i18n.t('say.unavailable'))), 8000)
                 }),
               ])
-              const result = await binding.session.prompt([{ type: 'text', text }], 'queue')
+              const result = await binding.session.prompt([{ type: 'text', text: framed }], 'queue')
               if (result && result.ok === false) {
                 const reason = result.error && result.error.message ? result.error.message : ''
                 throw new Error(reason || i18n.t('say.unavailable'))

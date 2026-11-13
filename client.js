@@ -22,7 +22,7 @@ window.__ModuleLoader__.load({
     /** Loopback key the host route accepts; see `PANEL_TOKEN` in the host half. */
     const PANEL_KEY = 'tf-2f7c9a1e6b8d4c05'
     /** Build marker: it rides every request so the host access log shows which panel build is live. */
-    const CLIENT_REV = '2026-10-26.1'
+    const CLIENT_REV = '2026-11-13.1'
 
     // ---------------------------------------------------------------- text
 
@@ -55,9 +55,9 @@ window.__ModuleLoader__.load({
       'due.overdue': '已过期',
       'say.placeholder': '跟 DSH 说一句：帮我找找周报模板，加进待办…',
       'say.send': '发送给 DSH',
-      'say.hint': '回车发送 · Shift+Enter 换行',
+      'say.hint': '发往「待办」专用对话 · 回车发送 · Shift+Enter 换行',
       'say.sending': '发送中…',
-      'say.sent': '已发给 DSH，新待办会自动出现在上面',
+      'say.sent': '已发给「待办」专用对话，新待办会自动出现在上面',
       'say.open': '看回复',
       'say.draft': '已放进对话输入框，按回车发送',
       'say.openChat': '打开对话',
@@ -97,9 +97,9 @@ window.__ModuleLoader__.load({
       'due.overdue': 'Overdue',
       'say.placeholder': 'Tell DSH what you need: find last week’s template and add it to my todos…',
       'say.send': 'Send to DSH',
-      'say.hint': 'Enter to send · Shift+Enter for a new line',
+      'say.hint': 'Goes to the dedicated Todos conversation · Enter to send · Shift+Enter for a new line',
       'say.sending': 'Sending…',
-      'say.sent': 'Sent to DSH — new todos will appear above',
+      'say.sent': 'Sent to the dedicated Todos conversation — new todos will appear above',
       'say.open': 'See reply',
       'say.draft': 'Put in the chat box — press Enter there to send',
       'say.openChat': 'Open chat',
@@ -609,13 +609,20 @@ window.__ModuleLoader__.load({
     }
 
     /**
-     * Bridge to the agent: remembers the Session the Conversation is showing (so a typed sentence
-     * and a file link both address that Session) and sends sentences into it.
+     * Bridge to the agent: remembers the Session the Conversation is showing (so a file link can
+     * return there) and sends the composer's sentences into one dedicated "待办" conversation.
+     *
+     * The composer never addresses the Session the user happens to be in: its first message creates
+     * a dedicated todo conversation, the id is anchored in this browser, and every later message
+     * reuses it (an archived anchor is revived; a deleted one gets a fresh conversation).
      * @param ctx - the plugin context.
      * @param i18n - the translator created in `apply`.
      */
     function createBridge(ctx, i18n) {
       let lastSessionId = null
+      /** Where this browser remembers the dedicated todo conversation. */
+      const TODO_SESSION_KEY = 'dsh-tf-todo-session-v1'
+      const TODO_SESSION_TITLE = '待办'
       // The panel's own inject list only declares 'slots', so a plain ctx.get() cannot see
       // sessions/uiWorkspace. Late-inject them here: the bridge degrades to "unavailable"
       // if the harness ever stops offering them, but sending works whenever they exist.
@@ -631,6 +638,37 @@ window.__ModuleLoader__.load({
         if (late && late[name]) return late[name]
         return typeof ctx.get === 'function' ? ctx.get(name) : undefined
       }
+
+      /** Read the anchored dedicated conversation id from this browser. */
+      const readTodoAnchor = () => {
+        try {
+          return typeof window !== 'undefined' && window.localStorage ? window.localStorage.getItem(TODO_SESSION_KEY) || '' : ''
+        } catch {
+          return ''
+        }
+      }
+
+      /** Remember which conversation is the dedicated one. */
+      const writeTodoAnchor = (sessionId) => {
+        try {
+          if (typeof window !== 'undefined' && window.localStorage) {
+            window.localStorage.setItem(TODO_SESSION_KEY, String(sessionId))
+          }
+        } catch {
+          // a blocked store keeps the anchor for this page only
+        }
+      }
+
+      /** Whether one session id is still on the visible (unarchived) list. */
+      const listedSession = (sessionId) => {
+        try {
+          const sessions = service('sessions')
+          const snapshot = sessions && sessions.list ? sessions.list.getSnapshot() : null
+          return !!(snapshot && Array.isArray(snapshot.ids) && snapshot.ids.includes(sessionId))
+        } catch {
+          return false
+        }
+      }
       return {
         remember(sessionId) {
           if (typeof sessionId === 'string' && sessionId) lastSessionId = sessionId
@@ -638,14 +676,124 @@ window.__ModuleLoader__.load({
         sessionId() {
           return lastSessionId
         },
+        /**
+         * Resolve the dedicated todo conversation: the anchored one when it still exists, a fresh
+         * one otherwise. The anchor lives in localStorage, so the same conversation serves the
+         * panel across reloads and restarts.
+         * @returns the session id, or '' when this environment cannot create sessions.
+         */
+        async ensureTodoSession() {
+          const sessions = service('sessions')
+          const ui = service('uiWorkspace')
+          const workspaces = service('workspaces')
+          const anchored = readTodoAnchor()
+          if (anchored) {
+            if (listedSession(anchored)) return anchored
+            // Off the visible list: archived, or deleted. Reviving proves it still exists.
+            if (workspaces && typeof workspaces.unarchiveSession === 'function') {
+              const revived = await Promise.resolve(workspaces.unarchiveSession(anchored)).then(
+                () => true,
+                () => false,
+              )
+              if (revived) return anchored
+            }
+          }
+          let created = ''
+          if (sessions && typeof sessions.create === 'function') {
+            try {
+              created = await sessions.create({})
+            } catch (error) {
+              if (typeof console !== 'undefined' && console.error) {
+                console.error('[todo-files] could not create the todo conversation', error)
+              }
+            }
+          }
+          if (!created && ui && typeof ui.connectWorkspace === 'function') {
+            try {
+              created = await ui.connectWorkspace(undefined, {})
+            } catch (error) {
+              if (typeof console !== 'undefined' && console.error) {
+                console.error('[todo-files] connectWorkspace failed', error)
+              }
+            }
+          }
+          if (!created) return ''
+          writeTodoAnchor(created)
+          this.renameTodoSession(created)
+          return created
+        },
+
+        /**
+         * Give the dedicated conversation its stable title. Cosmetic: a failure must never block
+         * a send, and the anchor above already guarantees reuse.
+         * @param sessionId - the dedicated conversation.
+         */
+        async renameTodoSession(sessionId) {
+          const sessions = service('sessions')
+          if (!sessionId || !sessions || typeof sessions.retain !== 'function') return
+          try {
+            const reference = sessions.retain(sessionId, { source: 'controllerOperation' })
+            try {
+              const binding = await Promise.race([
+                reference.ready,
+                new Promise((_, reject) => {
+                  window.setTimeout(() => reject(new Error('rename timeout')), 8000)
+                }),
+              ])
+              const session = binding && binding.session
+              if (session && typeof session.rename === 'function') await session.rename(TODO_SESSION_TITLE)
+            } finally {
+              try {
+                reference.release()
+              } catch {
+                // a reference released twice is harmless
+              }
+            }
+          } catch (error) {
+            if (typeof console !== 'undefined' && console.error) {
+              console.error('[todo-files] could not name the todo conversation', error)
+            }
+          }
+        },
+
         async send(text) {
           const sessions = service('sessions')
+          // The composer addresses the dedicated todo conversation, never the conversation the
+          // user happens to be in. A failure here is reported, not rerouted elsewhere.
+          const dedicated = await this.ensureTodoSession()
+          if (dedicated && sessions && typeof sessions.retain === 'function') {
+            const reference = sessions.retain(dedicated, { source: 'controllerOperation' })
+            try {
+              // A stale Session id can leave the open attempt pending forever, which used to
+              // freeze the composer on "sending" for the rest of the page life. Bound it.
+              const binding = await Promise.race([
+                reference.ready,
+                new Promise((_, reject) => {
+                  window.setTimeout(() => reject(new Error(i18n.t('say.unavailable'))), 8000)
+                }),
+              ])
+              const result = await binding.session.prompt([{ type: 'text', text }], 'queue')
+              if (result && result.ok === false) {
+                const reason = result.error && result.error.message ? result.error.message : ''
+                throw new Error(reason || i18n.t('say.unavailable'))
+              }
+              return { sessionId: dedicated }
+            } catch (error) {
+              if (typeof console !== 'undefined' && console.error) console.error('[todo-files] prompt failed', error)
+              throw error
+            } finally {
+              try {
+                reference.release()
+              } catch {
+                // a reference released twice is harmless
+              }
+            }
+          }
+          // Environments without session creation: the conversation currently open.
           if (sessions && typeof sessions.retain === 'function' && lastSessionId) {
             try {
               const reference = sessions.retain(lastSessionId, { source: 'controllerOperation' })
               try {
-                // A stale Session id can leave the open attempt pending forever, which used to
-                // freeze the composer on "sending" for the rest of the page life. Bound it.
                 const binding = await Promise.race([
                   reference.ready,
                   new Promise((_, reject) => {

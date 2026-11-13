@@ -1,10 +1,12 @@
 /**
  * Host half of the `@local/todo-files` bundle.
  *
- * Owns three things and nothing else:
+ * Owns four things and nothing else:
  *  - the personal todo list, persisted as JSON under `$DSH_HOME/data/dsh-todo-files/todos.json`;
  *  - read-only access to this computer's files for the sidebar panel (list / preview / reveal);
- *  - one HTTP endpoint plus one agent tool, both calling the same operations.
+ *  - one HTTP endpoint plus one agent tool, both calling the same operations;
+ *  - one global `todo-capture` skill, so any conversation can recognize a "remind me" phrase
+ *    and file it straight into the todo list.
  *
  * The panel in `client.js` is the only consumer of the endpoint; the endpoint is mounted on the
  * owner's browser session (`ctx.connection.requestRejection`) so another local process cannot read
@@ -1121,5 +1123,60 @@ export function apply(ctx, rawConfig) {
   } else {
     const tools = typeof ctx.get === 'function' ? ctx.get('tools') : undefined
     if (tools) ctx.effect(() => tools.register(todoTool))
+  }
+
+  // ---------------------------------------------------------------- skill
+
+  /**
+   * The global "capture a todo" skill. Registered from this plugin's own unscoped Host context,
+   * it lands in the global skill layer and is therefore offered in every conversation: the model
+   * sees the summary, loads this body on a "remind me / add a todo" phrase, and files the item
+   * with the `personal_todos` tool above.
+   */
+  const todoSkill = {
+    name: 'todo-capture',
+    description:
+      '把对话里冒出的“要记住的事 / 提醒 / 待办”直接录入 DSH 侧边栏的个人待办列表。用户说出“加个待办、帮我记一下、记一笔、提醒我、别忘了、备忘、待会儿要做、todo、remind”这类话，或让你把某件事记进待办时使用。',
+    whenToUse:
+      '任意对话中，用户说出“加个待办 / 帮我记一下 / 提醒我 / 别忘了 / 备忘 / 待会儿要做 / todo / remind”这类话，或让你把某件事记进待办时。',
+    source: 'runtime',
+    invocation: { modelInvocable: true, userInvocable: true },
+    content: [
+      '# 待办速记（todo capture）',
+      '',
+      '把对话里冒出来的待办、提醒、要记住的事，直接录入 DSH 侧边栏的**个人待办列表**。',
+      '',
+      '## 触发',
+      '用户的话里有这些意思就直接行动，不用等他点名“待办”：',
+      '- 加个待办 / 帮我记一下 / 记一笔 / 提醒我 / 别忘了 / 备忘 / 待会儿要做 / todo / remind',
+      '- 带时间的要求，比如“周五之前交周报”“每天给花浇水”',
+      '- 指着某个文件或文件夹说“把这个记进待办”',
+      '',
+      '## 录入（调用 personal_todos 工具）',
+      '- `action: "add"`；一次说多条就逐条 add。',
+      '- `title` 只写事项本身（动词开头、简洁），**日期不要写进 title**。',
+      '- 有时间就换算成 `YYYY-MM-DD` 放进 `due`：今天 = 当天日期，明天 = 当天 +1，周几 = 下一个该星期的日期。用户没提时间就不填。',
+      '- `category`：工作相关 → "work"（办公任务）；生活相关 → "life"（个人生活）。分不清就问一句，不要猜。',
+      '- 用户指到具体文件或文件夹 → `path` 填绝对路径，`kind` 填 "file" 或 "dir"。',
+      '- “每天/每周/每月”的重复习惯 → `recurring` 填 "daily"/"weekly"/"monthly"。',
+      '- 用户说“看看待办” → `action: "list"`；说“这条做完了” → 先 list 拿真实 id，再 `action: "update"` 传 `done: true`。**禁止编造 id**。',
+      '',
+      '## 回复',
+      '- 加完一句话确认即可，例如「已加入待办：交周报 截止 11-13」。',
+      '- 不要复述整个列表，除非用户要求。',
+    ].join('\n'),
+  }
+
+  try {
+    if (typeof ctx.inject === 'function') {
+      ctx.inject(['skills'], (inner) => {
+        inner.effect(() => inner.skills.register(todoSkill))
+      })
+    } else {
+      const skills = typeof ctx.get === 'function' ? ctx.get('skills') : undefined
+      if (skills) ctx.effect(() => skills.register(todoSkill))
+    }
+  } catch (error) {
+    warn('could not register the todo-capture skill', error)
   }
 }

@@ -1,6 +1,6 @@
 {
   "meta": {
     "title": "Todos",
-    "description": "A sidebar todo panel: each item can point at a file on this computer and opens it in the conversation's own preview; ask DSH to add items in plain language."
+    "description": "A sidebar todo panel: each item can point at a file on this computer and opens it in the conversation's own preview; a global todo-capture skill adds items from any conversation, and the panel composer always sends to one dedicated Todos conversation."
   }
 }
